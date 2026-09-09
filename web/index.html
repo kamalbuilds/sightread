@@ -637,9 +637,13 @@ function renderBob(data) {
     <span class="mono">tests/test_measure.py</span>. A human wrote
     <span class="mono">tools/bob_acp.py</span>, the client that drives Bob,
     <span class="mono">agent/pipeline.py</span>, <span class="mono">run_conform.py</span> and this page.
-    One bug in Bob's first output was sent back to Bob rather than patched by hand: a trailing gap was
-    closing at the whole file's duration instead of the end of the analysed window, which on an 87
-    minute film invents a gap tens of minutes long. Bob fixed it and added a chronological sort.`;
+    Two of these sessions exist because Bob's work went back to Bob rather than being patched by hand.
+    A trailing gap was closing at the whole file's duration instead of the end of the analysed window,
+    which on an 87 minute film invents a gap tens of minutes long; Bob fixed it and added a
+    chronological sort. And Bob's own test asserted <span class="mono">start_s != 0.0</span> against a
+    fixture whose correct answer is exactly 0.0, so the assertion could not tell working code from
+    broken code; Bob replaced the fixture with one where the two possible answers differ, and split the
+    true zero case into its own test.`;
 }
 
 function fail(msg) {
