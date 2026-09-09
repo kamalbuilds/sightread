@@ -247,10 +247,11 @@ def test_draft_routes_to_shorten_only_when_something_overran() -> None:
     )))
     assert [e.actions.route for e in events] == ["settled"]
 
-    live, payload = graph._overruns_payload(
+    live, payload, unfittable = graph._overruns_payload(
         [_cue(0, verdict="OVERFLOW", margin_ms=-1200, chars=60, rendered_duration_s=5.2)], 3
     )
     assert len(live) == 1
+    assert unfittable == []
     assert live[0]["overran_by_ms"] == 1200
     assert live[0]["max_chars"] < 60, "the ceiling must be below the length that overran"
     assert json.loads(payload) == live
@@ -259,12 +260,64 @@ def test_draft_routes_to_shorten_only_when_something_overran() -> None:
 def test_a_cue_out_of_attempts_is_not_offered_to_the_shortener() -> None:
     """Rewriting a line the loop will not render is a wasted model call."""
     exhausted = _cue(0, verdict="OVERFLOW", margin_ms=-90, attempts=3, chars=30)
-    live, _ = graph._overruns_payload([exhausted], 3)
+    live, _, unfittable = graph._overruns_payload([exhausted], 3)
     assert live == []
+    assert unfittable == []
 
     still_going = _cue(0, verdict="OVERFLOW", margin_ms=-90, attempts=2, chars=30)
-    live, _ = graph._overruns_payload([still_going], 3)
+    live, _, unfittable = graph._overruns_payload([still_going], 3)
     assert len(live) == 1
+    assert unfittable == []
+
+
+def test_a_gap_too_short_for_a_sentence_is_never_offered_to_the_shortener() -> None:
+    """A ceiling under MIN_USEFUL_CHARS is handed to a person, not to the model.
+
+    These are the real figures from gap 68 of a 2 second threshold run on Night
+    Tide: "Man reads newspaper." at 20 characters rendered to 17.091s against a
+    3.367s silence, 13974ms over, which leaves a ceiling of 2. Asked for two
+    characters the shortener returned "Mn", the timing gate measured it at 0.691s
+    and correctly called it FIT, and a token entered a described master. The gate
+    was not wrong. Two characters was never a description to begin with.
+    """
+    tight = _cue(
+        0, verdict="OVERFLOW", margin_ms=-13974, chars=20, rendered_duration_s=17.091
+    )
+    tight["char_budget"] = 26
+    tight["gap_duration_s"] = 3.367
+    ceiling = _conform_mod.shrink_budget(20, 17.091, -13974, 26)
+    assert ceiling < _conform_mod.MIN_USEFUL_CHARS, f"fixture is not tight enough: {ceiling}"
+
+    live, payload, unfittable = graph._overruns_payload([tight], 3)
+    assert live == []
+    assert json.loads(payload) == []
+    assert len(unfittable) == 1
+    assert unfittable[0]["gap_index"] == 0
+    assert str(_conform_mod.MIN_USEFUL_CHARS) in unfittable[0]["reason"]
+
+
+def test_a_rewrite_shorter_than_a_description_is_not_rendered() -> None:
+    """A fragment coming back from the shortener costs no TTS call and no take.
+
+    Driven through the node with a real cue, so the refusal is checked where it
+    happens. Nothing is rendered, so no credentials and no network are needed: if
+    the guard were removed this test would try to reach Vertex and fail loudly
+    rather than pass quietly.
+    """
+    over = _cue(0, verdict="OVERFLOW", margin_ms=-994, chars=27, rendered_duration_s=2.891)
+    over["char_budget"] = 40
+    assert (
+        _conform_mod.shrink_budget(27, 2.891, -994, 40) >= _conform_mod.MIN_USEFUL_CHARS
+    ), "this cue must reach the shortener, or the refusal below is never tested"
+    ctx = Ctx(cues=[over], shorten={"lines": [{"gap_index": 0, "line": "Mn", "dropped": "everything"}]})
+    events = asyncio.run(_collect(graph.retake(
+        ctx, "/tmp/sightread-never", "p", "us-central1", 250, 3
+    )))
+    assert ctx.state["cues"][0]["verdict"] == "OVERFLOW"
+    assert ctx.state["cues"][0]["attempts"] == 1, "no take was rendered"
+    reasons = [s["reason"] for s in ctx.state["skipped"]]
+    assert any("'Mn'" in r for r in reasons), reasons
+    assert [e.actions.route for e in events] == ["shorten"]
 
 
 def test_dispatch_overrides_a_publish_verdict_on_an_overflow_row() -> None:

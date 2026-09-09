@@ -74,6 +74,17 @@ def default_chars_per_second() -> float:
     return sig.parameters["chars_per_second"].default
 
 
+#: The shortest line in this project's corpus that is still a description rather
+#: than a fragment: "Man in bed." at 11 characters, which fit a 4.684s silence with
+#: 2623ms to spare. Below this a cut stops producing English. A run at a 2 second
+#: threshold once shrank a line to a 2 character ceiling, and the shortener returned
+#: "Mn", which the timing gate correctly accepted at 0.691s and which no listener
+#: could use. A silence that cannot hold this many characters cannot hold a
+#: description, and the honest output is to hand it to a describer rather than to
+#: fill it with a token.
+MIN_USEFUL_CHARS = 11
+
+
 def shrink_budget(
     chars: int,
     rendered_duration_s: float,

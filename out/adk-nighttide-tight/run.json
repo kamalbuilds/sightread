@@ -1,0 +1,1277 @@
+{
+ "run_id": "9740f9fb-33f5-4e36-9c43-a220e356806f",
+ "model": "gemini-2.5-flash",
+ "steps": [
+  {
+   "node": "measure",
+   "ok": true,
+   "summary": "found 76 gaps",
+   "gap_count": 76
+  },
+  {
+   "node": "survey",
+   "ok": true,
+   "summary": "surveyed 76 gaps",
+   "surveyed": 76
+  },
+  {
+   "node": "draft",
+   "ok": true,
+   "summary": "13 of 24 first takes fit, 11 to shorten",
+   "drafted": 24,
+   "fit_first_take": 13,
+   "to_shorten": 11,
+   "discarded_by_planner": 0,
+   "route": "shorten"
+  },
+  {
+   "node": "retake",
+   "ok": true,
+   "summary": "round 1: rendered 11, 11 now fit, 0 still over",
+   "round": 1,
+   "rendered": 11,
+   "now_fit": 11,
+   "still_over": 0,
+   "ignored": 0,
+   "route": "settled"
+  },
+  {
+   "node": "verify",
+   "ok": true,
+   "summary": "checked 24, agreed 24, disagreed 0",
+   "checked": 24,
+   "agreed": 24,
+   "disagreements": 0
+  },
+  {
+   "node": "dispatch",
+   "ok": true,
+   "summary": "escalate -> escalate",
+   "asked": "escalate",
+   "route": "escalate",
+   "override": ""
+  },
+  {
+   "node": "escalate",
+   "ok": true,
+   "summary": "1 gaps handed back to a describer",
+   "hand_back": 1,
+   "dropped_indices": 0,
+   "added_by_measurement": 0
+  },
+  {
+   "node": "report",
+   "ok": true,
+   "summary": "report assembled, 24 cues deliverable",
+   "fit": 24,
+   "overflow": 0
+  }
+ ],
+ "plan": {
+  "selected": [
+   8,
+   9,
+   10,
+   12,
+   16,
+   19,
+   27,
+   33,
+   34,
+   36,
+   37,
+   38,
+   40,
+   44,
+   51,
+   54,
+   56,
+   57,
+   60,
+   66,
+   68,
+   70,
+   72,
+   74
+  ],
+  "reasons": {
+   "8": "High peak (12.731) and sufficient character budget (20) indicate a significant visual change worth describing.",
+   "9": "High peak (8.591) and ample character budget (40) suggest a clear visual event.",
+   "10": "Very high peak (13.321) and sufficient character budget (21) make this a priority for description.",
+   "12": "Very high peak (10.147) and sufficient character budget (20) indicate a crucial visual moment.",
+   "16": "Moderate peak (2.086) and good character budget (24) allow for describing a noticeable change or movement.",
+   "19": "Moderate peak (1.515) and good character budget (24) suggest a visible shift in the scene.",
+   "27": "Very high peak (17.724) and good character budget (24) signify a major scene change.",
+   "33": "Moderate peak (2.569) and good character budget (28) are suitable for describing visual developments.",
+   "34": "Extremely high peak (18.172) and very ample character budget (57) make this a top priority for detailed description.",
+   "36": "Very high peak (18.757) and good character budget (27) indicate a significant visual event.",
+   "37": "Very high peak (13.196) and sufficient character budget (23) point to an important visual cue.",
+   "38": "Very high peak (13.685) and ample character budget (49) allow for a substantial description of a change.",
+   "40": "Good peak (4.53) and ample character budget (33) indicate a discernible visual event or motion.",
+   "44": "Very high peak (16.389) and sufficient character budget (21) signify a sharp visual transition.",
+   "51": "Very high peak (13.371) and sufficient character budget (23) indicate a clear visual change.",
+   "54": "Moderate peak (2.224) and ample character budget (31) are suitable for describing visual action.",
+   "56": "High peak (7.843) and ample character budget (32) suggest an important visual occurrence.",
+   "57": "High peak (7.249) and very ample character budget (81) provide an excellent opportunity for a detailed description.",
+   "60": "Very high peak (14.621) and good character budget (25) signify a prominent visual alteration.",
+   "66": "Good peak (5.074) and ample character budget (38) are appropriate for describing a significant visual element.",
+   "68": "Extremely high peak (26.899) and good character budget (26) mark a very strong and important visual change.",
+   "70": "Very high peak (14.709) and good character budget (24) indicate a major visual transition.",
+   "72": "High peak (11.498) and ample character budget (30) point to a strong visual event.",
+   "74": "Very high peak (17.523) and ample character budget (35) signify a crucial visual development."
+  },
+  "note": "Selected gaps with a character budget of 20 or more and a peak scene-change score indicating a significant visual event (generally above 1.5-2, and much higher for strong cuts). Gaps with low peak scores, even if long, were generally excluded as they indicate a relatively still frame not warranting attention according to the prompt."
+ },
+ "rounds": 1,
+ "verdict": {
+  "disposition": "escalate",
+  "reason": "Line for gap 60 has a very tight margin (39ms) making it a candidate for human review before mix.",
+  "hand_back": [
+   60
+  ],
+  "residual_work": "Review line for gap 60; it has a very tight margin and may need adjustment for a mixer."
+ },
+ "escalation": {
+  "hand_back": [
+   60
+  ],
+  "dropped_indices": [],
+  "added_by_measurement": [],
+  "reason": "Line for gap 60 has a very tight margin (39ms) making it a candidate for human review before mix.",
+  "residual_work": "Review line for gap 60; it has a very tight margin and may need adjustment for a mixer.",
+  "gaps": [
+   {
+    "gap_index": 60,
+    "gap_s": 3.26,
+    "line": "Man stands, looks around.",
+    "margin_ms": 39,
+    "verdict": "FIT",
+    "attempts": 1
+   }
+  ]
+ },
+ "trace": [
+  {
+   "agent": "coverage_planner",
+   "text": "{\n  \"selected\": [8, 9, 10, 12, 16, 19, 27, 33, 34, 36, 37, 38, 40, 44, 51, 54, 56, 57, 60, 66, 68, 70, 72, 74],\n  \"reasons\": {\n    \"8\": \"High peak (12.731) and sufficient character budget (20) indicate a significant visual change worth describing.\",\n    \"9\": \"High peak (8.591) and ample character budget (40) suggest a clear visual event.\",\n    \"10\": \"Very high peak (13.321) and sufficient character budget (21) make this a priority for description.\",\n    \"12\": \"Very high peak (10.147) and sufficient character budget (20) indicate a crucial visual moment.\",\n    \"16\": \"Moderate peak (2.086) and good character budget (24) allow for describing a noticeable change or movement.\",\n    \"19\": \"Moderate peak (1.515) and good character budget (24) suggest a visible shift in the scene.\",\n    \"27\": \"Very high peak (17.724) and good character budget (24) signify a major scene change.\",\n    \"33\": \"Moderate peak (2.569) and good character budget (28) are suitable for describing visual developments.\",\n    \"34\": \"Extremely high peak (18.172) and very ample character budget (57) make this a top priority for detailed description.\",\n    \"36\": \"Very high peak (18.757) and good character budget (27) indic"
+  },
+  {
+   "agent": "shorten",
+   "text": "{\n  \"lines\": [\n    {\n      \"gap_index\": 10,\n      \"line\": \"Man looks woman.\",\n      \"dropped\": \"at\"\n    },\n    {\n      \"gap_index\": 12,\n      \"line\": \"Man smiles.\",\n      \"dropped\": \"in profile\"\n    },\n    {\n      \"gap_index\": 27,\n      \"line\": \"Woman, man.\",\n      \"dropped\": \"carousel horses\"\n    },\n    {\n      \"gap_index\": 33,\n      \"line\": \"Uniform man moves.\",\n      \"dropped\": \"Man sits,\"\n    },\n    {\n      \"gap_index\": 36,\n      \"line\": \"Man with closed eyes.\",\n      \"dropped\": \"Man in sailor suit.\"\n    },\n    {\n      \"gap_index\": 37,\n      \"line\": \"Man holds object.\",\n      \"dropped\": \"00:00 Dark room, curtain blows. 00:01 Man holds object by chair. 00:02 Man holds object by chair.\"\n    },\n    {\n      \"gap_index\": 44,\n      \"line\": \"Person shifts.\",\n      \"dropped\": \"Two people sit inside. Person on right shifts. Person on right shifts.\"\n    },\n    {\n      \"gap_index\": 51,\n      \"line\": \"Woman, man's face.\",\n      \"dropped\": \"then\"\n    },\n    {\n      \"gap_index\": 56,\n      \"line\": \"Hallway, closed door.\",\n      \"dropped\": \"Narrow, dark\"\n    },\n    {\n      \"gap_index\": 68,\n      \"line\": \"Mn\",\n      \"dropped\": \"reads newspaper\"\n    },\n    {\n      \"gap_index\": 72,\n      \"line\": "
+  },
+  {
+   "agent": "adjudicate",
+   "text": "{\n  \"disposition\": \"escalate\",\n  \"reason\": \"Line for gap 60 has a very tight margin (39ms) making it a candidate for human review before mix.\",\n  \"hand_back\": [\n    60\n  ],\n  \"residual_work\": \"Review line for gap 60; it has a very tight margin and may need adjustment for a mixer.\"\n}"
+  }
+ ],
+ "report": {
+  "media": {
+   "path": "/tmp/sightread-media/nighttide.mp4",
+   "duration_s": 5256.566667
+  },
+  "settings": {
+   "noise_db": -26.0,
+   "min_gap_s": 2.0,
+   "headroom_ms": 250
+  },
+  "totals": {
+   "gaps": 24,
+   "fit": 24,
+   "overflow": 0,
+   "skipped": 0,
+   "described_seconds": 66.183,
+   "tightest_margin_ms": 39
+  },
+  "cues": [
+   {
+    "gap_index": 8,
+    "gap_start_s": 537.266021,
+    "gap_end_s": 539.846896,
+    "gap_duration_s": 2.580874999999992,
+    "char_budget": 20,
+    "chars_per_second": 8.6,
+    "text": "Woman speaks to man.",
+    "chars": 20,
+    "audio_path": "out/adk-nighttide-tight/gap0008.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0008.clip.mp4",
+    "rendered_duration_s": 1.290958,
+    "margin_ms": 1040,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 20,
+      "text": "Woman speaks to man.",
+      "chars": 20,
+      "rendered_duration_s": 1.290958,
+      "margin_ms": 1040,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 9,
+    "gap_start_s": 548.6805,
+    "gap_end_s": 553.612708,
+    "gap_duration_s": 4.932207999999946,
+    "char_budget": 40,
+    "chars_per_second": 8.6,
+    "text": "A man kisses a woman.",
+    "chars": 21,
+    "audio_path": "out/adk-nighttide-tight/gap0009.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0009.clip.mp4",
+    "rendered_duration_s": 2.210958,
+    "margin_ms": 2471,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 40,
+      "text": "A man kisses a woman.",
+      "chars": 21,
+      "rendered_duration_s": 2.210958,
+      "margin_ms": 2471,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 10,
+    "gap_start_s": 553.612792,
+    "gap_end_s": 556.322729,
+    "gap_duration_s": 2.709936999999968,
+    "char_budget": 17,
+    "chars_per_second": 8.6,
+    "text": "Man looks woman.",
+    "chars": 16,
+    "audio_path": "out/adk-nighttide-tight/gap0010.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0010.clip.mp4",
+    "rendered_duration_s": 2.170958,
+    "margin_ms": 289,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 21,
+      "text": "Man looks at woman.",
+      "chars": 19,
+      "rendered_duration_s": 2.570958,
+      "margin_ms": -111,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 17,
+      "text": "Man looks woman.",
+      "chars": 16,
+      "rendered_duration_s": 2.170958,
+      "margin_ms": 289,
+      "verdict": "FIT",
+      "dropped": "at"
+     }
+    ]
+   },
+   {
+    "gap_index": 12,
+    "gap_start_s": 567.341125,
+    "gap_end_s": 569.959583,
+    "gap_duration_s": 2.6184579999999187,
+    "char_budget": 17,
+    "chars_per_second": 8.6,
+    "text": "Man smiles.",
+    "chars": 11,
+    "audio_path": "out/adk-nighttide-tight/gap0012.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0012.clip.mp4",
+    "rendered_duration_s": 1.730958,
+    "margin_ms": 637,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 20,
+      "text": "Man smiles in profile.",
+      "chars": 22,
+      "rendered_duration_s": 2.690958,
+      "margin_ms": -323,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 17,
+      "text": "Man smiles.",
+      "chars": 11,
+      "rendered_duration_s": 1.730958,
+      "margin_ms": 637,
+      "verdict": "FIT",
+      "dropped": "in profile"
+     }
+    ]
+   },
+   {
+    "gap_index": 16,
+    "gap_start_s": 746.216208,
+    "gap_end_s": 749.304688,
+    "gap_duration_s": 3.088480000000004,
+    "char_budget": 24,
+    "chars_per_second": 8.6,
+    "text": "Man adjusts his uniform.",
+    "chars": 24,
+    "audio_path": "out/adk-nighttide-tight/gap0016.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0016.clip.mp4",
+    "rendered_duration_s": 2.730958,
+    "margin_ms": 108,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 24,
+      "text": "Man adjusts his uniform.",
+      "chars": 24,
+      "rendered_duration_s": 2.730958,
+      "margin_ms": 108,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 19,
+    "gap_start_s": 898.687375,
+    "gap_end_s": 901.808521,
+    "gap_duration_s": 3.121146000000067,
+    "char_budget": 24,
+    "chars_per_second": 8.6,
+    "text": "Man eats at a table.",
+    "chars": 20,
+    "audio_path": "out/adk-nighttide-tight/gap0019.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0019.clip.mp4",
+    "rendered_duration_s": 2.370958,
+    "margin_ms": 500,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 24,
+      "text": "Man eats at a table.",
+      "chars": 20,
+      "rendered_duration_s": 2.370958,
+      "margin_ms": 500,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 27,
+    "gap_start_s": 1980.081917,
+    "gap_end_s": 1983.145937,
+    "gap_duration_s": 3.0640200000000277,
+    "char_budget": 17,
+    "chars_per_second": 8.6,
+    "text": "Woman, man.",
+    "chars": 11,
+    "audio_path": "out/adk-nighttide-tight/gap0027.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0027.clip.mp4",
+    "rendered_duration_s": 1.730958,
+    "margin_ms": 1083,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 24,
+      "text": "Woman, man, carousel horses.",
+      "chars": 28,
+      "rendered_duration_s": 4.130958,
+      "margin_ms": -1317,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 17,
+      "text": "Woman, man.",
+      "chars": 11,
+      "rendered_duration_s": 1.730958,
+      "margin_ms": 1083,
+      "verdict": "FIT",
+      "dropped": "carousel horses"
+     }
+    ]
+   },
+   {
+    "gap_index": 33,
+    "gap_start_s": 2646.632896,
+    "gap_end_s": 2650.156812,
+    "gap_duration_s": 3.5239160000000993,
+    "char_budget": 22,
+    "chars_per_second": 8.6,
+    "text": "Uniform man moves.",
+    "chars": 18,
+    "audio_path": "out/adk-nighttide-tight/gap0033.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0033.clip.mp4",
+    "rendered_duration_s": 2.570958,
+    "margin_ms": 703,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 28,
+      "text": "Man sits, uniform man moves.",
+      "chars": 28,
+      "rendered_duration_s": 3.690958,
+      "margin_ms": -417,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 22,
+      "text": "Uniform man moves.",
+      "chars": 18,
+      "rendered_duration_s": 2.570958,
+      "margin_ms": 703,
+      "verdict": "FIT",
+      "dropped": "Man sits,"
+     }
+    ]
+   },
+   {
+    "gap_index": 34,
+    "gap_start_s": 2653.2625,
+    "gap_end_s": 2660.197833,
+    "gap_duration_s": 6.935333000000355,
+    "char_budget": 57,
+    "chars_per_second": 8.6,
+    "text": "A man in a light outfit turns in a room with shelves.",
+    "chars": 53,
+    "audio_path": "out/adk-nighttide-tight/gap0034.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0034.clip.mp4",
+    "rendered_duration_s": 4.610958,
+    "margin_ms": 2074,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 57,
+      "text": "A man in a light outfit turns in a room with shelves.",
+      "chars": 53,
+      "rendered_duration_s": 4.610958,
+      "margin_ms": 2074,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 36,
+    "gap_start_s": 2668.09225,
+    "gap_end_s": 2671.575583,
+    "gap_duration_s": 3.483332999999675,
+    "char_budget": 23,
+    "chars_per_second": 8.6,
+    "text": "Man with closed eyes.",
+    "chars": 21,
+    "audio_path": "out/adk-nighttide-tight/gap0036.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0036.clip.mp4",
+    "rendered_duration_s": 2.610958,
+    "margin_ms": 622,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 27,
+      "text": "Man with closed eyes. Man in sailor suit.",
+      "chars": 41,
+      "rendered_duration_s": 4.930958,
+      "margin_ms": -1698,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 23,
+      "text": "Man with closed eyes.",
+      "chars": 21,
+      "rendered_duration_s": 2.610958,
+      "margin_ms": 622,
+      "verdict": "FIT",
+      "dropped": "Man in sailor suit."
+     }
+    ]
+   },
+   {
+    "gap_index": 37,
+    "gap_start_s": 2673.676354,
+    "gap_end_s": 2676.692625,
+    "gap_duration_s": 3.0162709999999606,
+    "char_budget": 23,
+    "chars_per_second": 8.6,
+    "text": "Man holds object.",
+    "chars": 17,
+    "audio_path": "out/adk-nighttide-tight/gap0037.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0037.clip.mp4",
+    "rendered_duration_s": 2.610958,
+    "margin_ms": 155,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 23,
+      "text": "00:00 Dark room, curtain blows. 00:01 Man holds object by chair. 00:02 Man holds object by chair.",
+      "chars": 97,
+      "rendered_duration_s": 8.490958,
+      "margin_ms": -5725,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 23,
+      "text": "Man holds object.",
+      "chars": 17,
+      "rendered_duration_s": 2.610958,
+      "margin_ms": 155,
+      "verdict": "FIT",
+      "dropped": "00:00 Dark room, curtain blows. 00:01 Man holds object by chair. 00:02 Man holds object by chair."
+     }
+    ]
+   },
+   {
+    "gap_index": 38,
+    "gap_start_s": 2683.530125,
+    "gap_end_s": 2689.564333,
+    "gap_duration_s": 6.03420799999958,
+    "char_budget": 49,
+    "chars_per_second": 8.6,
+    "text": "Sailor looks at object; old man sleeps in chair.",
+    "chars": 48,
+    "audio_path": "out/adk-nighttide-tight/gap0038.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0038.clip.mp4",
+    "rendered_duration_s": 5.170958,
+    "margin_ms": 613,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 49,
+      "text": "Sailor looks at object; old man sleeps in chair.",
+      "chars": 48,
+      "rendered_duration_s": 5.170958,
+      "margin_ms": 613,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 40,
+    "gap_start_s": 2730.637958,
+    "gap_end_s": 2734.811208,
+    "gap_duration_s": 4.17325000000028,
+    "char_budget": 33,
+    "chars_per_second": 8.6,
+    "text": "Woman looks distressed at man.",
+    "chars": 30,
+    "audio_path": "out/adk-nighttide-tight/gap0040.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0040.clip.mp4",
+    "rendered_duration_s": 2.770958,
+    "margin_ms": 1152,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 33,
+      "text": "Woman looks distressed at man.",
+      "chars": 30,
+      "rendered_duration_s": 2.770958,
+      "margin_ms": 1152,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 44,
+    "gap_start_s": 2846.104146,
+    "gap_end_s": 2848.833562,
+    "gap_duration_s": 2.7294159999996737,
+    "char_budget": 20,
+    "chars_per_second": 8.6,
+    "text": "Person shifts.",
+    "chars": 14,
+    "audio_path": "out/adk-nighttide-tight/gap0044.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0044.clip.mp4",
+    "rendered_duration_s": 0.970958,
+    "margin_ms": 1508,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 21,
+      "text": "Two people sit inside. Person on right shifts. Person on right shifts.",
+      "chars": 70,
+      "rendered_duration_s": 7.170958,
+      "margin_ms": -4692,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 20,
+      "text": "Person shifts.",
+      "chars": 14,
+      "rendered_duration_s": 0.970958,
+      "margin_ms": 1508,
+      "verdict": "FIT",
+      "dropped": "Two people sit inside. Person on right shifts. Person on right shifts."
+     }
+    ]
+   },
+   {
+    "gap_index": 51,
+    "gap_start_s": 3244.695042,
+    "gap_end_s": 3247.667229,
+    "gap_duration_s": 2.9721870000003037,
+    "char_budget": 20,
+    "chars_per_second": 8.6,
+    "text": "Woman, man's face.",
+    "chars": 18,
+    "audio_path": "out/adk-nighttide-tight/gap0051.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0051.clip.mp4",
+    "rendered_duration_s": 1.730958,
+    "margin_ms": 991,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 23,
+      "text": "Woman, then man's face.",
+      "chars": 23,
+      "rendered_duration_s": 2.770958,
+      "margin_ms": -49,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 20,
+      "text": "Woman, man's face.",
+      "chars": 18,
+      "rendered_duration_s": 1.730958,
+      "margin_ms": 991,
+      "verdict": "FIT",
+      "dropped": "then"
+     }
+    ]
+   },
+   {
+    "gap_index": 54,
+    "gap_start_s": 3514.172833,
+    "gap_end_s": 3518.104604,
+    "gap_duration_s": 3.931771000000026,
+    "char_budget": 31,
+    "chars_per_second": 8.6,
+    "text": "Man sleeps on his side in bed.",
+    "chars": 30,
+    "audio_path": "out/adk-nighttide-tight/gap0054.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0054.clip.mp4",
+    "rendered_duration_s": 2.850958,
+    "margin_ms": 831,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 31,
+      "text": "Man sleeps on his side in bed.",
+      "chars": 30,
+      "rendered_duration_s": 2.850958,
+      "margin_ms": 831,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 56,
+    "gap_start_s": 3523.574979,
+    "gap_end_s": 3527.573958,
+    "gap_duration_s": 3.998978999999963,
+    "char_budget": 24,
+    "chars_per_second": 8.6,
+    "text": "Hallway, closed door.",
+    "chars": 21,
+    "audio_path": "out/adk-nighttide-tight/gap0056.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0056.clip.mp4",
+    "rendered_duration_s": 2.890958,
+    "margin_ms": 858,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 32,
+      "text": "Narrow, dark hallway, closed door.",
+      "chars": 34,
+      "rendered_duration_s": 4.730958,
+      "margin_ms": -982,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 24,
+      "text": "Hallway, closed door.",
+      "chars": 21,
+      "rendered_duration_s": 2.890958,
+      "margin_ms": 858,
+      "verdict": "FIT",
+      "dropped": "Narrow, dark"
+     }
+    ]
+   },
+   {
+    "gap_index": 57,
+    "gap_start_s": 3597.802,
+    "gap_end_s": 3607.494792,
+    "gap_duration_s": 9.692791999999827,
+    "char_budget": 81,
+    "chars_per_second": 8.6,
+    "text": "A man lies in bed, looking troubled. A closed door. The man lies in bed.",
+    "chars": 72,
+    "audio_path": "out/adk-nighttide-tight/gap0057.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0057.clip.mp4",
+    "rendered_duration_s": 7.050958,
+    "margin_ms": 2392,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 81,
+      "text": "A man lies in bed, looking troubled. A closed door. The man lies in bed.",
+      "chars": 72,
+      "rendered_duration_s": 7.050958,
+      "margin_ms": 2392,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 60,
+    "gap_start_s": 3925.185187,
+    "gap_end_s": 3928.445417,
+    "gap_duration_s": 3.260229999999865,
+    "char_budget": 25,
+    "chars_per_second": 8.6,
+    "text": "Man stands, looks around.",
+    "chars": 25,
+    "audio_path": "out/adk-nighttide-tight/gap0060.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0060.clip.mp4",
+    "rendered_duration_s": 2.970958,
+    "margin_ms": 39,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 25,
+      "text": "Man stands, looks around.",
+      "chars": 25,
+      "rendered_duration_s": 2.970958,
+      "margin_ms": 39,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 66,
+    "gap_start_s": 4437.808479,
+    "gap_end_s": 4442.49275,
+    "gap_duration_s": 4.684271000000081,
+    "char_budget": 38,
+    "chars_per_second": 8.6,
+    "text": "Man in bed. Lace curtains, lamp.",
+    "chars": 32,
+    "audio_path": "out/adk-nighttide-tight/gap0066.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0066.clip.mp4",
+    "rendered_duration_s": 4.090958,
+    "margin_ms": 343,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 38,
+      "text": "Man in bed. Lace curtains, lamp.",
+      "chars": 32,
+      "rendered_duration_s": 4.090958,
+      "margin_ms": 343,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 68,
+    "gap_start_s": 4488.863167,
+    "gap_end_s": 4492.229833,
+    "gap_duration_s": 3.3666659999998956,
+    "char_budget": 2,
+    "chars_per_second": 8.6,
+    "text": "Mn",
+    "chars": 2,
+    "audio_path": "out/adk-nighttide-tight/gap0068.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0068.clip.mp4",
+    "rendered_duration_s": 0.690958,
+    "margin_ms": 2426,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 26,
+      "text": "Man reads newspaper.",
+      "chars": 20,
+      "rendered_duration_s": 17.090958,
+      "margin_ms": -13974,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 2,
+      "text": "Mn",
+      "chars": 2,
+      "rendered_duration_s": 0.690958,
+      "margin_ms": 2426,
+      "verdict": "FIT",
+      "dropped": "reads newspaper"
+     }
+    ]
+   },
+   {
+    "gap_index": 70,
+    "gap_start_s": 4500.101583,
+    "gap_end_s": 4503.159229,
+    "gap_duration_s": 3.0576460000002044,
+    "char_budget": 24,
+    "chars_per_second": 8.6,
+    "text": "Man reads newspaper.",
+    "chars": 20,
+    "audio_path": "out/adk-nighttide-tight/gap0070.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0070.clip.mp4",
+    "rendered_duration_s": 2.690958,
+    "margin_ms": 117,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 24,
+      "text": "Man reads newspaper.",
+      "chars": 20,
+      "rendered_duration_s": 2.690958,
+      "margin_ms": 117,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 72,
+    "gap_start_s": 4757.934375,
+    "gap_end_s": 4761.748875,
+    "gap_duration_s": 3.8145000000004075,
+    "char_budget": 27,
+    "chars_per_second": 8.6,
+    "text": "Young man looks forward.",
+    "chars": 24,
+    "audio_path": "out/adk-nighttide-tight/gap0072.take2.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0072.clip.mp4",
+    "rendered_duration_s": 2.410958,
+    "margin_ms": 1154,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 30,
+      "text": "Young man looks forward. Older man looks down. Older man looks down. Older man looks down.",
+      "chars": 90,
+      "rendered_duration_s": 9.930958,
+      "margin_ms": -6366,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 27,
+      "text": "Young man looks forward.",
+      "chars": 24,
+      "rendered_duration_s": 2.410958,
+      "margin_ms": 1154,
+      "verdict": "FIT",
+      "dropped": "Older man looks down. Older man looks down. Older man looks down."
+     }
+    ]
+   },
+   {
+    "gap_index": 74,
+    "gap_start_s": 5117.804062,
+    "gap_end_s": 5122.178687,
+    "gap_duration_s": 4.374624999999469,
+    "char_budget": 35,
+    "chars_per_second": 8.6,
+    "text": "Bright light behind dark clouds.",
+    "chars": 32,
+    "audio_path": "out/adk-nighttide-tight/gap0074.take1.wav",
+    "clip_path": "out/adk-nighttide-tight/gap0074.clip.mp4",
+    "rendered_duration_s": 3.250958,
+    "margin_ms": 874,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 35,
+      "text": "Bright light behind dark clouds.",
+      "chars": 32,
+      "rendered_duration_s": 3.250958,
+      "margin_ms": 874,
+      "verdict": "FIT"
+     }
+    ]
+   }
+  ],
+  "skipped": [],
+  "verified": {
+   "checked": 24,
+   "agreed": 24,
+   "disagreed": [],
+   "table": [
+    {
+     "gap_index": 8,
+     "gap_s": 2.581,
+     "line": "Woman speaks to man.",
+     "chars": 20,
+     "spoken_s": 1.291,
+     "margin_ms": 1040,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 9,
+     "gap_s": 4.932,
+     "line": "A man kisses a woman.",
+     "chars": 21,
+     "spoken_s": 2.211,
+     "margin_ms": 2471,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 10,
+     "gap_s": 2.71,
+     "line": "Man looks woman.",
+     "chars": 16,
+     "spoken_s": 2.171,
+     "margin_ms": 289,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 12,
+     "gap_s": 2.618,
+     "line": "Man smiles.",
+     "chars": 11,
+     "spoken_s": 1.731,
+     "margin_ms": 637,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 16,
+     "gap_s": 3.088,
+     "line": "Man adjusts his uniform.",
+     "chars": 24,
+     "spoken_s": 2.731,
+     "margin_ms": 108,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 19,
+     "gap_s": 3.121,
+     "line": "Man eats at a table.",
+     "chars": 20,
+     "spoken_s": 2.371,
+     "margin_ms": 500,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 27,
+     "gap_s": 3.064,
+     "line": "Woman, man.",
+     "chars": 11,
+     "spoken_s": 1.731,
+     "margin_ms": 1083,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 33,
+     "gap_s": 3.524,
+     "line": "Uniform man moves.",
+     "chars": 18,
+     "spoken_s": 2.571,
+     "margin_ms": 703,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 34,
+     "gap_s": 6.935,
+     "line": "A man in a light outfit turns in a room with shelves.",
+     "chars": 53,
+     "spoken_s": 4.611,
+     "margin_ms": 2074,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 36,
+     "gap_s": 3.483,
+     "line": "Man with closed eyes.",
+     "chars": 21,
+     "spoken_s": 2.611,
+     "margin_ms": 622,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 37,
+     "gap_s": 3.016,
+     "line": "Man holds object.",
+     "chars": 17,
+     "spoken_s": 2.611,
+     "margin_ms": 155,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 38,
+     "gap_s": 6.034,
+     "line": "Sailor looks at object; old man sleeps in chair.",
+     "chars": 48,
+     "spoken_s": 5.171,
+     "margin_ms": 613,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 40,
+     "gap_s": 4.173,
+     "line": "Woman looks distressed at man.",
+     "chars": 30,
+     "spoken_s": 2.771,
+     "margin_ms": 1152,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 44,
+     "gap_s": 2.729,
+     "line": "Person shifts.",
+     "chars": 14,
+     "spoken_s": 0.971,
+     "margin_ms": 1508,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 51,
+     "gap_s": 2.972,
+     "line": "Woman, man's face.",
+     "chars": 18,
+     "spoken_s": 1.731,
+     "margin_ms": 991,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 54,
+     "gap_s": 3.932,
+     "line": "Man sleeps on his side in bed.",
+     "chars": 30,
+     "spoken_s": 2.851,
+     "margin_ms": 831,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 56,
+     "gap_s": 3.999,
+     "line": "Hallway, closed door.",
+     "chars": 21,
+     "spoken_s": 2.891,
+     "margin_ms": 858,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 57,
+     "gap_s": 9.693,
+     "line": "A man lies in bed, looking troubled. A closed door. The man lies in bed.",
+     "chars": 72,
+     "spoken_s": 7.051,
+     "margin_ms": 2392,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 60,
+     "gap_s": 3.26,
+     "line": "Man stands, looks around.",
+     "chars": 25,
+     "spoken_s": 2.971,
+     "margin_ms": 39,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 66,
+     "gap_s": 4.684,
+     "line": "Man in bed. Lace curtains, lamp.",
+     "chars": 32,
+     "spoken_s": 4.091,
+     "margin_ms": 343,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 68,
+     "gap_s": 3.367,
+     "line": "Mn",
+     "chars": 2,
+     "spoken_s": 0.691,
+     "margin_ms": 2426,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 70,
+     "gap_s": 3.058,
+     "line": "Man reads newspaper.",
+     "chars": 20,
+     "spoken_s": 2.691,
+     "margin_ms": 117,
+     "verdict": "FIT",
+     "attempts": 1
+    },
+    {
+     "gap_index": 72,
+     "gap_s": 3.815,
+     "line": "Young man looks forward.",
+     "chars": 24,
+     "spoken_s": 2.411,
+     "margin_ms": 1154,
+     "verdict": "FIT",
+     "attempts": 2
+    },
+    {
+     "gap_index": 74,
+     "gap_s": 4.375,
+     "line": "Bright light behind dark clouds.",
+     "chars": 32,
+     "spoken_s": 3.251,
+     "margin_ms": 874,
+     "verdict": "FIT",
+     "attempts": 1
+    }
+   ],
+   "rounds": 1
+  },
+  "verdict": {
+   "disposition": "escalate",
+   "reason": "Line for gap 60 has a very tight margin (39ms) making it a candidate for human review before mix.",
+   "hand_back": [
+    60
+   ],
+   "residual_work": "Review line for gap 60; it has a very tight margin and may need adjustment for a mixer."
+  },
+  "escalation": {
+   "hand_back": [
+    60
+   ],
+   "dropped_indices": [],
+   "added_by_measurement": [],
+   "reason": "Line for gap 60 has a very tight margin (39ms) making it a candidate for human review before mix.",
+   "residual_work": "Review line for gap 60; it has a very tight margin and may need adjustment for a mixer.",
+   "gaps": [
+    {
+     "gap_index": 60,
+     "gap_s": 3.26,
+     "line": "Man stands, looks around.",
+     "margin_ms": 39,
+     "verdict": "FIT",
+     "attempts": 1
+    }
+   ]
+  },
+  "plan": {
+   "selected": [
+    8,
+    9,
+    10,
+    12,
+    16,
+    19,
+    27,
+    33,
+    34,
+    36,
+    37,
+    38,
+    40,
+    44,
+    51,
+    54,
+    56,
+    57,
+    60,
+    66,
+    68,
+    70,
+    72,
+    74
+   ],
+   "reasons": {
+    "8": "High peak (12.731) and sufficient character budget (20) indicate a significant visual change worth describing.",
+    "9": "High peak (8.591) and ample character budget (40) suggest a clear visual event.",
+    "10": "Very high peak (13.321) and sufficient character budget (21) make this a priority for description.",
+    "12": "Very high peak (10.147) and sufficient character budget (20) indicate a crucial visual moment.",
+    "16": "Moderate peak (2.086) and good character budget (24) allow for describing a noticeable change or movement.",
+    "19": "Moderate peak (1.515) and good character budget (24) suggest a visible shift in the scene.",
+    "27": "Very high peak (17.724) and good character budget (24) signify a major scene change.",
+    "33": "Moderate peak (2.569) and good character budget (28) are suitable for describing visual developments.",
+    "34": "Extremely high peak (18.172) and very ample character budget (57) make this a top priority for detailed description.",
+    "36": "Very high peak (18.757) and good character budget (27) indicate a significant visual event.",
+    "37": "Very high peak (13.196) and sufficient character budget (23) point to an important visual cue.",
+    "38": "Very high peak (13.685) and ample character budget (49) allow for a substantial description of a change.",
+    "40": "Good peak (4.53) and ample character budget (33) indicate a discernible visual event or motion.",
+    "44": "Very high peak (16.389) and sufficient character budget (21) signify a sharp visual transition.",
+    "51": "Very high peak (13.371) and sufficient character budget (23) indicate a clear visual change.",
+    "54": "Moderate peak (2.224) and ample character budget (31) are suitable for describing visual action.",
+    "56": "High peak (7.843) and ample character budget (32) suggest an important visual occurrence.",
+    "57": "High peak (7.249) and very ample character budget (81) provide an excellent opportunity for a detailed description.",
+    "60": "Very high peak (14.621) and good character budget (25) signify a prominent visual alteration.",
+    "66": "Good peak (5.074) and ample character budget (38) are appropriate for describing a significant visual element.",
+    "68": "Extremely high peak (26.899) and good character budget (26) mark a very strong and important visual change.",
+    "70": "Very high peak (14.709) and good character budget (24) indicate a major visual transition.",
+    "72": "High peak (11.498) and ample character budget (30) point to a strong visual event.",
+    "74": "Very high peak (17.523) and ample character budget (35) signify a crucial visual development."
+   },
+   "note": "Selected gaps with a character budget of 20 or more and a peak scene-change score indicating a significant visual event (generally above 1.5-2, and much higher for strong cuts). Gaps with low peak scores, even if long, were generally excluded as they indicate a relatively still frame not warranting attention according to the prompt."
+  }
+ }
+}

@@ -193,6 +193,21 @@ async def survey(
     _step(ctx, "survey", True, f"surveyed {len(gaps)} gaps", {"surveyed": len(gaps)})
 
 
+def _model_step(ctx: Any, name: str, summary: str, data: dict) -> None:
+    """Record that an LlmAgent node ran, from the node that consumes its output.
+
+    An `LlmAgent` node has no body of ours to call `_step` from, so without this the
+    step record, and the graph the page draws from it, holds only the function
+    nodes. That would put a picture with no model in it directly underneath a
+    paragraph about three model nodes.
+
+    Recorded by the consumer rather than assumed: every figure in the summary is
+    counted off the structured output that actually arrived in state, so a model
+    turn that produced nothing says so.
+    """
+    _step(ctx, name, True, summary, {**data, "model_node": True})
+
+
 def _gap_object(entry: dict) -> _gaps_mod.Gap:
     return _gaps_mod.Gap(
         index=entry["index"],
@@ -236,14 +251,22 @@ def _cue_from_take(take: _conform_mod.Take, gap: dict, cps: float) -> dict:
     }
 
 
-def _overruns_payload(cues: list[dict], max_attempts: int) -> tuple[list[dict], str]:
+def _overruns_payload(
+    cues: list[dict], max_attempts: int
+) -> tuple[list[dict], str, list[dict]]:
     """The cues that still overran, with the ceiling each rewrite has to hit.
 
     The ceiling is `ad.conform.shrink_budget`, sized from the measured overrun.
-    Cues that have already used every attempt are not offered again: a fourth
-    rewrite of a line the loop is not going to render is a wasted model call.
+
+    Two kinds of cue are held back. One has already used every attempt: a further
+    rewrite of a line the loop is not going to render is a wasted model call. The
+    other has a ceiling below `ad.conform.MIN_USEFUL_CHARS`, where a cut stops
+    producing English. Asking for a description in two characters gets a token, and
+    the timing gate will accept the token because it is genuinely short. That
+    silence is handed to a describer instead, and the reason is recorded.
     """
     live: list[dict] = []
+    unfittable: list[dict] = []
     for cue in cues:
         if cue["verdict"] != "OVERFLOW" or cue["attempts"] >= max_attempts:
             continue
@@ -253,6 +276,19 @@ def _overruns_payload(cues: list[dict], max_attempts: int) -> tuple[list[dict], 
             cue["margin_ms"],
             cue["char_budget"],
         )
+        if ceiling < _conform_mod.MIN_USEFUL_CHARS:
+            unfittable.append(
+                {
+                    "gap_index": cue["gap_index"],
+                    "reason": (
+                        f"the measured overrun leaves {ceiling} characters, under the "
+                        f"{_conform_mod.MIN_USEFUL_CHARS} a description needs. This "
+                        f"{cue['gap_duration_s']:.3f}s silence cannot hold a spoken "
+                        "line at the measured rate."
+                    ),
+                }
+            )
+            continue
         live.append(
             {
                 "gap_index": cue["gap_index"],
@@ -264,7 +300,7 @@ def _overruns_payload(cues: list[dict], max_attempts: int) -> tuple[list[dict], 
                 "max_chars": ceiling,
             }
         )
-    return live, json.dumps(live, separators=(",", ":"))
+    return live, json.dumps(live, separators=(",", ":")), unfittable
 
 
 async def draft(
@@ -296,6 +332,19 @@ async def draft(
                 {"gap_index": idx, "reason": "index not present in measured gaps"}
             )
 
+    _model_step(
+        ctx,
+        "coverage_planner",
+        f"selected {len(accepted)} of {len(gaps)} silences"
+        + (f", {len(skipped)} invented index dropped" if skipped else ""),
+        {
+            "selected": len(accepted),
+            "of": len(gaps),
+            "invented": len(skipped),
+            "note": (plan.get("note") or "")[:400],
+        },
+    )
+
     cues: list[dict] = []
     for idx in accepted:
         entry = gaps_by_index[idx]
@@ -320,8 +369,10 @@ async def draft(
     ctx.state["skipped"] = skipped
     ctx.state["rounds"] = 0
 
-    live, payload = _overruns_payload(cues, max_attempts)
+    live, payload, unfittable = _overruns_payload(cues, max_attempts)
     ctx.state["overruns_json"] = payload
+    if unfittable:
+        ctx.state["skipped"] = list(ctx.state.get("skipped") or []) + unfittable
     route = "shorten" if live else "settled"
 
     fit = sum(1 for c in cues if c["verdict"] == "FIT")
@@ -359,10 +410,19 @@ async def retake(
     cues_by_index = {c["gap_index"]: c for c in cues}
     rounds = int(ctx.state.get("rounds") or 0) + 1
 
+    returned = list(shorten.get("lines") or [])
+    _model_step(
+        ctx,
+        "shorten",
+        f"round {rounds}: rewrote {len(returned)} "
+        + ("line" if len(returned) == 1 else "lines"),
+        {"round": rounds, "rewritten": len(returned)},
+    )
+
     rendered = 0
     improved = 0
     ignored: list[dict] = []
-    for item in list(shorten.get("lines") or []):
+    for item in returned:
         idx = item.get("gap_index")
         line = (item.get("line") or "").strip()
         cue = cues_by_index.get(idx)
@@ -371,6 +431,22 @@ async def retake(
             continue
         if cue["verdict"] == "FIT" or cue["attempts"] >= max_attempts:
             ignored.append({"gap_index": idx, "reason": "cue already settled"})
+            continue
+        if len(line) < _conform_mod.MIN_USEFUL_CHARS:
+            # Not rendered. A fragment this short reads as a fit because it is
+            # genuinely quick to say, and the timing gate has no opinion about
+            # whether it is English. Refusing it here costs one TTS call and keeps
+            # a token out of a described master.
+            ignored.append(
+                {
+                    "gap_index": idx,
+                    "reason": (
+                        f"the rewrite came back at {len(line)} characters, under the "
+                        f"{_conform_mod.MIN_USEFUL_CHARS} a description needs: "
+                        f"{line!r}"
+                    ),
+                }
+            )
             continue
 
         ceiling = _conform_mod.shrink_budget(
@@ -432,8 +508,10 @@ async def retake(
     if ignored:
         ctx.state["skipped"] = list(ctx.state.get("skipped") or []) + ignored
 
-    live, payload = _overruns_payload(cues, max_attempts)
+    live, payload, unfittable = _overruns_payload(cues, max_attempts)
     ctx.state["overruns_json"] = payload
+    if unfittable:
+        ctx.state["skipped"] = list(ctx.state.get("skipped") or []) + unfittable
     route = "shorten" if live else "settled"
 
     _step(
@@ -546,6 +624,18 @@ async def dispatch(ctx: Any):
     verdict: dict = dict(ctx.state.get("verdict") or {})
     verified: dict = dict(ctx.state.get("verified") or {})
     asked = str(verdict.get("disposition") or "").strip().lower()
+
+    _model_step(
+        ctx,
+        "adjudicate",
+        f"{asked or 'no disposition'}, "
+        f"{len(verdict.get('hand_back') or [])} to hand back",
+        {
+            "disposition": asked,
+            "hand_back": len(verdict.get("hand_back") or []),
+            "reason": (verdict.get("reason") or "")[:400],
+        },
+    )
 
     overran = [
         row["gap_index"]
