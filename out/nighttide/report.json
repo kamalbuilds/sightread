@@ -1,0 +1,137 @@
+{
+ "media": {
+  "path": "/tmp/sightread-media/nighttide.mp4",
+  "duration_s": 5256.566667
+ },
+ "settings": {
+  "noise_db": -26.0,
+  "min_gap_s": 2.0,
+  "headroom_ms": 250
+ },
+ "totals": {
+  "gaps": 3,
+  "fit": 3,
+  "overflow": 0,
+  "skipped": 0,
+  "described_seconds": 4.793,
+  "tightest_margin_ms": 3
+ },
+ "cues": [
+  {
+   "gap_index": 0,
+   "gap_start_s": 662.692833,
+   "gap_end_s": 664.839875,
+   "gap_duration_s": 2.147042000000056,
+   "char_budget": 11,
+   "text": "On carousel.",
+   "chars": 12,
+   "audio_path": "out/nighttide/gap0000.take3.wav",
+   "clip_path": "out/nighttide/gap0000.clip.mp4",
+   "rendered_duration_s": 1.650958,
+   "margin_ms": 246,
+   "verdict": "FIT",
+   "attempts": 3,
+   "attempt_log": [
+    {
+     "attempt": 1,
+     "char_budget": 26,
+     "chars": 27,
+     "rendered_duration_s": 2.370958,
+     "margin_ms": -474,
+     "verdict": "OVERFLOW"
+    },
+    {
+     "attempt": 2,
+     "char_budget": 19,
+     "chars": 21,
+     "rendered_duration_s": 2.890958,
+     "margin_ms": -994,
+     "verdict": "OVERFLOW"
+    },
+    {
+     "attempt": 3,
+     "char_budget": 11,
+     "chars": 12,
+     "rendered_duration_s": 1.650958,
+     "margin_ms": 246,
+     "verdict": "FIT"
+    }
+   ]
+  },
+  {
+   "gap_index": 1,
+   "gap_start_s": 691.395792,
+   "gap_end_s": 693.428438,
+   "gap_duration_s": 2.0326459999999997,
+   "char_budget": 14,
+   "text": "Two men talk.",
+   "chars": 13,
+   "audio_path": "out/nighttide/gap0001.take3.wav",
+   "clip_path": "out/nighttide/gap0001.clip.mp4",
+   "rendered_duration_s": 1.210958,
+   "margin_ms": 572,
+   "verdict": "FIT",
+   "attempts": 3,
+   "attempt_log": [
+    {
+     "attempt": 1,
+     "char_budget": 24,
+     "chars": 28,
+     "rendered_duration_s": 2.770958,
+     "margin_ms": -988,
+     "verdict": "OVERFLOW"
+    },
+    {
+     "attempt": 2,
+     "char_budget": 16,
+     "chars": 16,
+     "rendered_duration_s": 1.850958,
+     "margin_ms": -68,
+     "verdict": "OVERFLOW"
+    },
+    {
+     "attempt": 3,
+     "char_budget": 14,
+     "chars": 13,
+     "rendered_duration_s": 1.210958,
+     "margin_ms": 572,
+     "verdict": "FIT"
+    }
+   ]
+  },
+  {
+   "gap_index": 2,
+   "gap_start_s": 738.517333,
+   "gap_end_s": 740.701417,
+   "gap_duration_s": 2.1840839999999844,
+   "char_budget": 11,
+   "text": "Man in hall",
+   "chars": 11,
+   "audio_path": "out/nighttide/gap0002.take2.wav",
+   "clip_path": "out/nighttide/gap0002.clip.mp4",
+   "rendered_duration_s": 1.930958,
+   "margin_ms": 3,
+   "verdict": "FIT",
+   "attempts": 2,
+   "attempt_log": [
+    {
+     "attempt": 1,
+     "char_budget": 27,
+     "chars": 45,
+     "rendered_duration_s": 6.130958,
+     "margin_ms": -4197,
+     "verdict": "OVERFLOW"
+    },
+    {
+     "attempt": 2,
+     "char_budget": 11,
+     "chars": 11,
+     "rendered_duration_s": 1.930958,
+     "margin_ms": 3,
+     "verdict": "FIT"
+    }
+   ]
+  }
+ ],
+ "skipped": []
+}

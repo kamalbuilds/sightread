@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sightread: audio description conformed into measured silences</title>
+<meta name="description" content="Measures the real silences in a film, writes an audio description line to fit each one, renders it, then re-measures the rendered audio and rejects the takes that overrun.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0a0c;
+  --ink-2:#101014;
+  --line:#232329;
+  --line-2:#2e2e36;
+  --fg:#e8e8ea;
+  --fg-2:#9a9aa4;
+  --fg-3:#65656f;
+  --amber:#e4a33b;
+  --amber-dim:#7a5a20;
+  --red:#c2483d;
+  --red-dim:#5e2620;
+  --green:#4a8f6a;
+  --r:4px;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  color:var(--fg);
+  font:400 15px/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+a{color:var(--amber);text-decoration:none;border-bottom:1px solid var(--amber-dim)}
+a:hover{border-bottom-color:var(--amber)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* masthead */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101015 0%,var(--ink) 100%)}
+.masthead{padding:44px 0 34px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:end}
+h1{font:600 30px/1.1 var(--sans);margin:0 0 12px;letter-spacing:-0.01em}
+h1 .dot{color:var(--amber)}
+.lede{margin:0;max-width:58ch;color:var(--fg-2);font-size:16px}
+.lede strong{color:var(--fg);font-weight:500}
+.slate{
+  border:1px solid var(--line);border-radius:var(--r);background:#0c0c10;
+  padding:14px 16px;min-width:270px;
+}
+.slate dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12.5px}
+.slate dt{color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;font-size:10.5px;padding-top:2px}
+.slate dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--fg)}
+
+/* headline measurements */
+.tally{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tally div{padding:18px 0 20px;border-right:1px solid var(--line)}
+.tally div:last-child{border-right:0}
+.tally .n{font:600 27px/1 var(--mono);font-variant-numeric:tabular-nums;display:block}
+.tally .n.ok{color:var(--amber)}
+.tally .k{display:block;margin-top:7px;color:var(--fg-3);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
+
+section{padding:46px 0 8px}
+h2{font:600 19px/1.2 var(--sans);margin:0 0 6px}
+.sub{margin:0 0 26px;color:var(--fg-2);font-size:14px;max-width:74ch}
+
+/* the ladder */
+.run{margin-bottom:52px}
+.runhead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.runhead h3{font:600 15px/1.2 var(--sans);margin:0}
+.runhead .note{color:var(--fg-3);font-size:13px}
+.runhead .cfg{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--fg-3)}
+
+.gap{padding:20px 0;border-bottom:1px solid var(--line)}
+.gaptop{display:flex;align-items:baseline;gap:16px;margin-bottom:13px;flex-wrap:wrap}
+.gid{font:600 11px/1 var(--mono);color:var(--fg-3);letter-spacing:0.08em;padding-top:3px}
+.tc{font:500 13px/1 var(--mono);color:var(--fg-2)}
+.dur{font:600 13px/1 var(--mono);color:var(--fg)}
+.line{flex:1 1 340px;min-width:0;font-size:15px}
+.line em{font-style:normal;color:var(--fg)}
+.verdict{font:600 10.5px/1 var(--mono);letter-spacing:0.09em;padding:5px 7px;border-radius:2px;border:1px solid}
+.verdict.FIT{color:var(--amber);border-color:var(--amber-dim);background:#1a1408}
+.verdict.OVERFLOW{color:var(--red);border-color:var(--red-dim);background:#1a0c0a}
+
+/* one row per take: the bar IS the argument */
+.ladder{display:grid;gap:5px}
+.take{display:grid;grid-template-columns:56px 1fr 128px;align-items:center;gap:12px}
+.take .lbl{font:400 11px/1 var(--mono);color:var(--fg-3);text-align:right}
+.track{position:relative;height:22px;background:#08080a;border:1px solid #191920;border-radius:2px}
+.silence{position:absolute;top:0;bottom:0;left:0;background:#141419;border-right:1px solid var(--fg-3)}
+.usable{position:absolute;top:0;bottom:0;background:#1c1c24;border-left:1px solid var(--line-2);border-right:1px solid var(--line-2)}
+.beyond{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(135deg,#0b0b0e 0 5px,#0e0e12 5px 10px)}
+.bar{position:absolute;top:3px;bottom:3px;left:0;border-radius:1px;display:flex;align-items:center;padding-left:7px;overflow:visible;white-space:nowrap}
+.bar.fit{background:linear-gradient(180deg,#e4a33b 0%,#c98b2b 100%)}
+.bar.over{background:linear-gradient(180deg,#c2483d 0%,#a03a30 100%)}
+.bar span{font:600 10px/1 var(--mono);color:#160f04}
+.bar.over span{color:#fdeceb}
+.edge{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--fg-3)}
+.edge.hard{background:var(--fg-2)}
+.take .num{font:500 11.5px/1.35 var(--mono);color:var(--fg-2);text-align:right}
+.take .num b{font-weight:600;color:var(--fg)}
+.take.rejected .num b{color:var(--red)}
+.take.accepted .num b{color:var(--amber)}
+.audio{display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap}
+.play{
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  font:500 11px/1 var(--mono);letter-spacing:0.02em;
+  background:#101015;border:1px solid var(--line-2);color:var(--fg-2);
+  border-radius:2px;padding:6px 9px 6px 7px;
+}
+.play:hover{border-color:var(--fg-3);color:var(--fg);background:#16161d}
+.play .tri{width:0;height:0;border-left:6px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+.play.kept{color:var(--amber);border-color:var(--amber-dim)}
+.play.kept:hover{background:#1a1408;border-color:var(--amber)}
+.play.thrown{color:var(--red);border-color:var(--red-dim)}
+.play.thrown:hover{background:#1a0c0a;border-color:var(--red)}
+.play.playing .tri{border-left:0;border-top:0;border-bottom:0;width:7px;height:9px;border-left:3px solid currentColor;border-right:3px solid currentColor}
+.audio .hint{font:400 10.5px/1 var(--mono);color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-right:3px}
+.said{margin:5px 0 0;color:var(--fg-3);font-size:13px;font-style:italic}
+
+/* what this instance can and cannot do */
+.live{
+  margin-top:22px;border:1px solid var(--line);border-left:2px solid var(--line-2);
+  background:#0c0c10;border-radius:0 var(--r) var(--r) 0;padding:15px 17px;
+}
+.live.ready{border-left-color:var(--amber-dim)}
+.live .state{font:600 10.5px/1 var(--mono);letter-spacing:0.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px;display:block}
+.live.ready .state{color:var(--amber)}
+.live p{margin:0;font-size:13.5px;color:var(--fg-2);max-width:82ch}
+.live .cmd{
+  font-family:var(--mono);font-size:11.5px;color:var(--fg-2);background:#08080b;
+  border:1px solid var(--line);border-radius:2px;padding:10px 12px;margin-top:11px;
+  overflow-x:auto;white-space:pre-wrap;word-break:break-all;
+}
+
+/* rejected takes, up front */
+.thrown{display:grid;gap:2px}
+.thrown-row{padding:15px 16px;border:1px solid var(--line);border-left:2px solid var(--red-dim);background:#0c0c10;border-radius:0 var(--r) var(--r) 0}
+.thrown-row:hover{border-left-color:var(--red)}
+.thrown-meta{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.thrown-why{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12.5px;color:var(--fg-2)}
+.thrown-why b{color:var(--red);font-family:var(--mono);font-weight:600}
+
+/* rate finding */
+.finding{border:1px solid var(--line);border-radius:var(--r);background:#0c0c10;padding:22px 24px 24px}
+.strip{position:relative;height:76px;margin:22px 0 8px}
+.axis{position:absolute;left:0;right:0;top:38px;height:1px;background:var(--line-2)}
+.pt{position:absolute;top:32px;width:2px;height:13px;background:var(--amber);border-radius:1px;opacity:0.85}
+.mark{position:absolute;top:6px;bottom:6px;width:1px}
+.mark.med{background:var(--fg-2)}
+.mark.old{background:var(--red)}
+.mark b{position:absolute;top:-2px;left:6px;font:500 10.5px/1 var(--mono);white-space:nowrap;color:var(--fg-2)}
+.mark.old b{color:var(--red)}
+.tick{position:absolute;top:56px;font:400 10px/1 var(--mono);color:var(--fg-3);transform:translateX(-50%)}
+.finding p{margin:12px 0 0;color:var(--fg-2);font-size:13.5px;max-width:80ch}
+.finding p b{color:var(--fg);font-weight:500}
+
+/* the graph */
+.graph{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-bottom:14px}
+.node{
+  flex:1 1 150px;border:1px solid var(--line);background:#0c0c10;border-radius:var(--r);
+  padding:12px 13px;display:flex;flex-direction:column;gap:5px;min-width:0;
+}
+.node.model{border-color:var(--amber-dim);background:#14100a}
+.nname{font:600 12px/1.2 var(--mono);color:var(--fg)}
+.node.model .nname{color:var(--amber)}
+.nwhat{font-size:11.5px;line-height:1.4;color:var(--fg-3)}
+.ntag{font:500 9.5px/1 var(--mono);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-3);margin-top:auto;padding-top:6px}
+.node.model .ntag{color:var(--amber-dim)}
+.arrow{align-self:center;width:14px;height:1px;background:var(--line-2);position:relative;flex:0 0 14px}
+.arrow::after{content:"";position:absolute;right:0;top:-2.5px;border-left:5px solid var(--line-2);border-top:3px solid transparent;border-bottom:3px solid transparent}
+.verifybar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--line);border-left:2px solid var(--amber-dim);background:#0c0c10;
+  border-radius:0 var(--r) var(--r) 0;padding:12px 15px;font-size:13px;color:var(--fg-2);
+}
+.verifybar b{font-family:var(--mono);font-weight:600;color:var(--fg)}
+.verifybar b.good{color:var(--amber)}
+.verifybar b.bad{color:var(--red)}
+.vsep{width:1px;height:15px;background:var(--line-2)}
+.runid{color:var(--fg-3);font-size:11.5px;margin-left:auto}
+.picks{margin-top:12px;display:grid;gap:5px}
+.pick{display:flex;gap:13px;align-items:baseline;font-size:12.5px;color:var(--fg-2)}
+.pick .why{color:var(--fg-3)}
+
+/* provenance */
+.bobgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:12px;margin-top:18px}
+.card{border:1px solid var(--line);border-radius:var(--r);background:#0c0c10;padding:15px 16px}
+.card h4{font:600 12px/1.2 var(--mono);margin:0 0 9px;color:var(--fg)}
+.card .sid{font:400 10px/1.4 var(--mono);color:var(--fg-3);word-break:break-all;margin-bottom:9px}
+.card ul{margin:0;padding-left:16px;font-family:var(--mono);font-size:11.5px;color:var(--fg-2)}
+.card li{margin:2px 0}
+.split{margin-top:20px;border-left:2px solid var(--amber-dim);padding-left:16px;color:var(--fg-2);font-size:13.5px;max-width:82ch}
+.split b{color:var(--fg);font-weight:500}
+
+footer{margin-top:56px;border-top:1px solid var(--line);padding:26px 0 60px;color:var(--fg-3);font-size:12.5px}
+.repro{font-family:var(--mono);font-size:11.5px;color:var(--fg-2);background:#0c0c10;border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;margin-top:12px;overflow-x:auto;white-space:pre}
+.loading{padding:60px 0;color:var(--fg-3);font-family:var(--mono);font-size:13px}
+.err{border:1px solid var(--red-dim);background:#160b0a;border-radius:var(--r);padding:16px 18px;color:#e8b5b0;font-size:13.5px}
+@media (max-width:880px){
+  .masthead{grid-template-columns:1fr}
+  .tally{grid-template-columns:repeat(2,1fr)}
+  .tally div:nth-child(2n){border-right:0}
+  .take{grid-template-columns:44px 1fr;gap:8px}
+  .take .num{grid-column:2;text-align:left}
+}
+@media (prefers-reduced-motion:no-preference){
+  .bar{animation:grow .5s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes grow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1)}}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="masthead">
+      <div>
+        <h1>Sightread<span class="dot">.</span></h1>
+        <p class="lede">Audio description has to fit in the silence between two lines of dialogue, to the
+        millisecond. Sightread measures those silences in the actual audio, writes a line for each one,
+        renders it, then <strong>measures the rendered audio again</strong> and rejects the takes that
+        overrun. Nothing is accepted because a model said it would fit.</p>
+      </div>
+      <div class="slate" id="slate"></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tally" id="tally"></div>
+  <div id="live"></div>
+</div>
+
+<div class="wrap">
+  <section>
+    <h2>The takes that were thrown out</h2>
+    <p class="sub">These are the lines Gemini wrote that did not survive being measured. Each one was
+    rendered to real speech, and each one ran past the end of the silence it was written for. Play any
+    of them against the silence length beside it. A model reporting success cannot produce this list.</p>
+    <div id="thrown" class="thrown"></div>
+  </section>
+
+  <section>
+    <h2>Every take, in order, per silence</h2>
+    <p class="sub">One row per attempt. The track is the measured silence; the shaded band inside it is
+    what is usable after 250ms of headroom is kept at each end so the line never clips the dialogue
+    around it. A bar that runs past the band was rejected, and you can play it.</p>
+    <div id="runs"><div class="loading">reading reports from disk...</div></div>
+  </section>
+
+  <section>
+    <h2>The character budget came from measuring, not from a convention</h2>
+    <p class="sub">Subtitle practice reads at about 14 characters per second, so that is what the first
+    version assumed. The rendered audio disagreed.</p>
+    <div class="finding" id="finding"></div>
+  </section>
+
+  <section>
+    <h2>The graph, and the step that cannot be skipped</h2>
+    <p class="sub">A Google ADK 2.8 <span class="mono">Workflow</span>. Two nodes call Gemini, and
+    neither of them produces a number that reaches a verdict: the planner chooses which silences
+    deserve a listener's attention, and <span class="mono">conform</span> gets the line written and
+    spoken, but ffprobe decides whether it fit. <span class="mono">verify</span> then re-measures every
+    accepted WAV from disk and recomputes its verdict independently, so a conform step that reported a
+    fit it never measured would surface here as a disagreement.</p>
+    <div id="adk"></div>
+  </section>
+
+  <section>
+    <h2>Built with IBM Bob</h2>
+    <p class="sub">Bob Shell 2.0.2, driven over the Agent Client Protocol from
+    <span class="mono">tools/bob_acp.py</span>. Each session's transcript is in the repository and holds
+    the byte-for-byte content Bob wrote for every file, alongside the session id that Bob's own task
+    ledger records independently.</p>
+    <div class="bobgrid" id="bob"></div>
+    <div class="split" id="split"></div>
+  </section>
+
+  <footer>
+    <div>Source: Night Tide (1961), public domain, from archive.org. Gap boundaries are ffmpeg
+    <span class="mono">silencedetect</span>; rendered durations are <span class="mono">ffprobe</span> on
+    the WAV that came back. Descriptions from Gemini 2.5 Flash on Vertex AI, speech from Gemini 2.5
+    Flash TTS, voice Kore. Orchestrated as a Google ADK 2.8 <span class="mono">Workflow</span>.</div>
+    <div class="repro" id="repro"></div>
+  </footer>
+</div>
+
+<script>
+const fmtTC = s => {
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), sec = s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${sec.toFixed(3).padStart(6,'0')}`;
+};
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ms = n => (n >= 0 ? '+' : '') + n + 'ms';
+
+function renderSlate(runs) {
+  const r = runs[0].report;
+  document.getElementById('slate').innerHTML = `
+    <dl>
+      <dt>Title</dt><dd>Night Tide (1961)</dd>
+      <dt>Runtime</dt><dd>${fmtTC(r.media.duration_s)}</dd>
+      <dt>Threshold</dt><dd>${r.settings.noise_db} dB</dd>
+      <dt>Headroom</dt><dd>${r.settings.headroom_ms} ms each end</dd>
+      <dt>Rate</dt><dd>8.6 char/s measured</dd>
+    </dl>`;
+}
+
+function renderTally(runs) {
+  let gaps = 0, fit = 0, takes = 0, rejected = 0, described = 0, tightest = null;
+  for (const run of runs) {
+    const t = run.report.totals;
+    gaps += t.gaps; fit += t.fit; described += t.described_seconds;
+    for (const c of run.report.cues) {
+      takes += c.attempt_log.length;
+      rejected += c.attempt_log.filter(a => a.verdict === 'OVERFLOW').length;
+      if (c.verdict === 'FIT' && (tightest === null || c.margin_ms < tightest)) tightest = c.margin_ms;
+    }
+  }
+  document.getElementById('tally').innerHTML = `
+    <div><span class="n">${gaps}</span><span class="k">silences measured</span></div>
+    <div><span class="n ok">${fit}</span><span class="k">lines that fit</span></div>
+    <div><span class="n">${rejected}</span><span class="k">takes rejected on measurement</span></div>
+    <div><span class="n">${described.toFixed(3)}s</span><span class="k">description placed</span></div>
+    <div><span class="n">${ms(tightest)}</span><span class="k">tightest surviving margin</span></div>`;
+}
+
+function track(a, gapS, headroomS, pct) {
+  const ok = a.verdict === 'FIT';
+  const usableL = pct(headroomS), usableW = pct(gapS - headroomS) - usableL;
+  return `
+  <div class="take ${ok ? 'accepted' : 'rejected'}">
+    <div class="lbl">take ${a.attempt}</div>
+    <div class="track">
+      <div class="silence" style="width:${pct(gapS)}%"></div>
+      <div class="beyond" style="left:${pct(gapS)}%"></div>
+      <div class="usable" style="left:${usableL}%;width:${usableW}%"></div>
+      <div class="bar ${ok ? 'fit' : 'over'}" style="width:${pct(headroomS + a.rendered_duration_s)}%">
+        <span>${a.rendered_duration_s.toFixed(3)}s</span>
+      </div>
+    </div>
+    <div class="num">${a.chars} char &middot; <b>${ms(a.margin_ms)}</b></div>
+  </div>`;
+}
+
+function takeFile(cue, attempt) {
+  return cue.audio_path.split('/').pop().replace(/take\d+/, 'take' + attempt);
+}
+
+/** One compact play control per take. Native controls render as a wide grey pill
+ *  that reads as a broken element next to a dense measurement table. */
+function player(slug, cue, a) {
+  const kept = a.verdict === 'FIT';
+  return `<button class="play ${kept ? 'kept' : 'thrown'}"
+    data-src="/audio/${slug}/${takeFile(cue, a.attempt)}">
+    <span class="tri"></span>${kept ? 'kept' : 'rejected'} ${a.attempt}
+    &middot; ${a.rendered_duration_s.toFixed(2)}s</button>`;
+}
+
+let current = null;
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.play');
+  if (!btn) return;
+  if (current) { current.audio.pause(); current.btn.classList.remove('playing'); }
+  if (current && current.btn === btn) { current = null; return; }
+  const audio = new Audio(btn.dataset.src);
+  current = { audio, btn };
+  btn.classList.add('playing');
+  audio.addEventListener('ended', () => { btn.classList.remove('playing'); current = null; });
+  audio.play().catch(() => btn.classList.remove('playing'));
+});
+
+/** The rejected takes, up front. A line that fits proves the tool ran; a line
+ *  that was thrown out on a second measurement proves the tool checked. */
+/** Say plainly whether this instance can measure a film right now. A hosted copy
+ *  serves completed runs and does not carry the 290MB source, which is a fact
+ *  worth stating rather than a control that spins and never resolves. */
+function renderLive(live) {
+  if (!live) return;
+  document.getElementById('live').innerHTML = `
+    <div class="live ${live.available ? 'ready' : ''}">
+      <span class="state">${live.available ? 'live run available' : 'completed runs only'}</span>
+      <p>${esc(live.reason)}</p>
+      ${live.available ? '' : `<div class="cmd">${esc(live.source.reproduce)}</div>`}
+    </div>`;
+}
+
+function renderThrown(runs) {
+  const rows = [];
+  for (const run of runs) {
+    for (const c of run.report.cues) {
+      for (const a of c.attempt_log) {
+        if (a.verdict === 'OVERFLOW') rows.push({ run, c, a });
+      }
+    }
+  }
+  if (!rows.length) return;
+  rows.sort((x, y) => x.a.margin_ms - y.a.margin_ms);
+  const scale = Math.max(...rows.map(r => Math.max(r.c.gap_duration_s, r.a.rendered_duration_s)));
+  const pct = v => Math.min(100, (v / scale) * 100);
+  document.getElementById('thrown').innerHTML = rows.map(({ run, c, a }) => `
+    <div class="thrown-row">
+      <div class="thrown-meta">
+        <span class="gid">GAP ${String(c.gap_index).padStart(2,'0')}</span>
+        <span class="tc">${fmtTC(c.gap_start_s)}</span>
+        <span class="dur">${c.gap_duration_s.toFixed(3)}s silence</span>
+      </div>
+      ${track(a, c.gap_duration_s, run.report.settings.headroom_ms / 1000, pct)}
+      <div class="thrown-why">
+        overran the usable silence by <b>${Math.abs(a.margin_ms)}ms</b>
+        ${player(run.slug, c, a)}
+      </div>
+    </div>`).join('');
+}
+
+function renderRuns(runs) {
+  const out = [];
+  for (const run of runs) {
+    const rep = run.report, cues = rep.cues;
+    const scale = Math.max(...cues.flatMap(c =>
+      [c.gap_duration_s, ...c.attempt_log.map(a => a.rendered_duration_s)]));
+    const pct = v => Math.min(100, (v / scale) * 100);
+
+    const rows = cues.map(c => {
+      const head = c.gap_duration_s, hr = rep.settings.headroom_ms / 1000;
+      const usableL = pct(hr), usableW = pct(head - hr) - usableL;
+      const takes = c.attempt_log.map(a => track(a, head, hr, pct)).join('');
+
+      const players = c.attempt_log.map(a => player(run.slug, c, a)).join('');
+
+      return `
+      <div class="gap">
+        <div class="gaptop">
+          <span class="gid">GAP ${String(c.gap_index).padStart(2,'0')}</span>
+          <span class="tc">${fmtTC(c.gap_start_s)} &rarr; ${fmtTC(c.gap_end_s)}</span>
+          <span class="dur">${c.gap_duration_s.toFixed(3)}s</span>
+          <span class="line"><em>${esc(c.text)}</em></span>
+          <span class="verdict ${c.verdict}">${c.verdict}</span>
+        </div>
+        <div class="ladder">${takes}</div>
+        <div class="audio"><span class="hint">hear it</span>${players}</div>
+        ${c.attempt_log.length > 1 ? `<p class="said">${c.attempt_log.length} takes. Budget went
+          ${c.attempt_log.map(a => a.char_budget).join(' &rarr; ')} characters, each step sized from the
+          overrun that was actually measured.</p>` : ''}
+      </div>`;
+    }).join('');
+
+    out.push(`
+      <div class="run">
+        <div class="runhead">
+          <h3>${esc(run.label)}</h3>
+          <span class="note">${esc(run.note)}</span>
+          <span class="cfg">min gap ${rep.settings.min_gap_s}s &middot; ${rep.totals.fit}/${rep.totals.gaps} fit</span>
+        </div>
+        ${rows}
+      </div>`);
+  }
+  document.getElementById('runs').innerHTML = out.join('');
+}
+
+function renderFinding(data) {
+  const s = data.summary, rates = data.rates;
+  const lo = 4, hi = 15, span = hi - lo;
+  const at = v => ((v - lo) / span) * 100;
+  const pts = rates.map(r => `<div class="pt" style="left:${at(r)}%"></div>`).join('');
+  const ticks = [5,7,9,11,13,15].map(v =>
+    `<div class="tick" style="left:${at(v)}%">${v}</div>`).join('');
+  document.getElementById('finding').innerHTML = `
+    <div class="strip">
+      <div class="axis"></div>
+      ${pts}
+      <div class="mark med" style="left:${at(s.median)}%"><b>median ${s.median}</b></div>
+      <div class="mark old" style="left:${at(14)}%"><b>14 assumed</b></div>
+      ${ticks}
+    </div>
+    <p>Every rendered take, plotted at its own <b>characters divided by measured seconds</b>.
+    ${s.n} takes: minimum <b>${s.min}</b>, median <b>${s.median}</b>, maximum <b>${s.max}</b>
+    characters per second. The assumed 14 sits outside the data entirely, which is why the first
+    attempt on the first three gaps overran by 474ms, 988ms and 4197ms. The default is now
+    <b>8.6</b>, and after that change 7 of 9 gaps fit on the first take instead of none of 3.
+    A wrong constant costs one Gemini call and one speech call per gap, every gap, and only the
+    second measurement makes it visible.</p>`;
+}
+
+/** The tag says what DECIDES at each node, not what runs there. `conform` calls
+ *  Gemini twice per attempt and would be mislabelled as deterministic, but the
+ *  accept or reject is ffprobe's, which is the distinction the product turns on. */
+const NODES = [
+  ['measure',          'ffmpeg silencedetect over the film',        false, 'ffmpeg decides'],
+  ['survey',           'ffmpeg scdet, visual activity per silence', false, 'ffmpeg decides'],
+  ['coverage_planner', 'which silences are worth describing',       true,  'gemini decides'],
+  ['conform',          'describe, render, re-measure, retry',       true,  'gemini writes, ffprobe decides'],
+  ['verify',           're-measure every accepted WAV from disk',   false, 'ffprobe decides'],
+  ['report',           'assemble the conform report',               false, 'no model call'],
+];
+
+/** How many silences the measure node actually found, which is the denominator
+ *  the planner chose from. Reading it off the cues would only ever count the ones
+ *  it picked, so the ratio would always read as complete coverage. */
+function measured(d) {
+  const step = (d.steps || []).find(s => s.node === 'measure' || s.step === 'measure');
+  return (step && (step.gap_count ?? step.data?.gap_count)) ?? (d.plan.selected || []).length;
+}
+
+function renderAdk(d) {
+  const v = d.verified || {};
+  const chosen = new Set(d.plan.selected || []);
+  const reasons = d.plan.reasons || {};
+  document.getElementById('adk').innerHTML = `
+    <div class="graph">
+      ${NODES.map(([name, what, touchesModel, tag]) => `
+        <div class="node ${touchesModel ? 'model' : ''}">
+          <span class="nname">${name}</span>
+          <span class="nwhat">${what}</span>
+          <span class="ntag">${tag}</span>
+        </div>`).join('<div class="arrow"></div>')}
+    </div>
+    <div class="verifybar">
+      <span><b class="${v.disagreed && v.disagreed.length ? 'bad' : 'good'}">${v.agreed ?? 0}/${v.checked ?? 0}</b>
+      accepted takes re-measured from disk, verdicts agreed</span>
+      <span class="vsep"></span>
+      <span><b>${(d.plan.selected || []).length}</b> of ${measured(d)} silences selected by the planner</span>
+      <span class="vsep"></span>
+      <span class="mono runid">run ${(d.run_id || '').slice(0, 8)}</span>
+    </div>
+    <div class="picks">
+      ${Object.entries(reasons).map(([i, why]) => `
+        <div class="pick">
+          <span class="gid">GAP ${String(i).padStart(2,'0')}</span>
+          <span class="why">${esc(why)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderBob(data) {
+  document.getElementById('bob').innerHTML = data.sessions.map(s => `
+    <div class="card">
+      <h4>${esc(s.task.replace(/^task-\d+-/, ''))}</h4>
+      <div class="sid">${esc(s.agent.name || 'bob-shell')} ${esc(s.agent.version || '')}
+        &middot; session ${esc((s.sessionId || '').slice(0, 16))}
+        &middot; ${s.events} protocol events</div>
+      <ul>${s.wrote.map(w => `<li>${esc(w)}</li>`).join('') || '<li>read only</li>'}</ul>
+    </div>`).join('');
+  document.getElementById('split').innerHTML = `
+    <b>What Bob wrote, and what it did not.</b> Bob authored the measurement and conforming core:
+    <span class="mono">ad/gaps.py</span>, <span class="mono">ad/fit.py</span>,
+    <span class="mono">ad/describe.py</span>, <span class="mono">ad/render.py</span>,
+    <span class="mono">ad/conform.py</span>, <span class="mono">ad/rate.py</span>,
+    <span class="mono">ad/visual.py</span>, <span class="mono">agent/graph.py</span> and
+    <span class="mono">tests/test_measure.py</span>. A human wrote
+    <span class="mono">tools/bob_acp.py</span>, the client that drives Bob,
+    <span class="mono">agent/pipeline.py</span>, <span class="mono">run_conform.py</span> and this page.
+    One bug in Bob's first output was sent back to Bob rather than patched by hand: a trailing gap was
+    closing at the whole file's duration instead of the end of the analysed window, which on an 87
+    minute film invents a gap tens of minutes long. Bob fixed it and added a chronological sort.`;
+}
+
+function fail(msg) {
+  document.getElementById('runs').innerHTML = `<div class="err">${esc(msg)}</div>`;
+}
+
+(async () => {
+  try {
+    const [runsRes, rateRes, bobRes, adkRes] = await Promise.all([
+      fetch('/api/runs'), fetch('/api/rate'), fetch('/api/bob'), fetch('/api/adk')
+    ]);
+    if (!runsRes.ok) { fail((await runsRes.json()).detail || 'no reports on disk'); return; }
+    const { runs, live } = await runsRes.json();
+    renderSlate(runs); renderTally(runs); renderLive(live);
+    renderThrown(runs); renderRuns(runs);
+    if (rateRes.ok) renderFinding(await rateRes.json());
+    if (adkRes.ok) renderAdk(await adkRes.json());
+    if (bobRes.ok) renderBob(await bobRes.json());
+    document.getElementById('repro').textContent =
+      'python run_conform.py NightTide.mp4 --noise-db -26 --min-gap-s 4.0 \\\n' +
+      '  --out-dir out/nighttide-long --report out/nighttide-long/report.json';
+  } catch (e) {
+    fail('Could not read the conform reports: ' + e.message);
+  }
+})();
+</script>
+</body>
+</html>

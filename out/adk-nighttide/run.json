@@ -1,0 +1,292 @@
+{
+ "run_id": "c3c3ec91-3b12-40e9-9728-2fb825427b6e",
+ "steps": [
+  {
+   "node": "measure",
+   "ok": true,
+   "summary": "found 9 gaps",
+   "gap_count": 9
+  },
+  {
+   "node": "survey",
+   "ok": true,
+   "summary": "surveyed 9 gaps",
+   "surveyed": 9
+  },
+  {
+   "node": "conform",
+   "ok": true,
+   "summary": "conformed 7 cues, skipped 0",
+   "accepted": 7,
+   "discarded_by_planner": 0,
+   "skipped_by_conform": 0
+  },
+  {
+   "node": "verify",
+   "ok": true,
+   "summary": "checked 7, agreed 7, disagreed 0",
+   "checked": 7,
+   "agreed": 7,
+   "disagreements": 0
+  },
+  {
+   "node": "report",
+   "ok": true,
+   "summary": "report assembled",
+   "fit": 7
+  }
+ ],
+ "plan": {
+  "selected": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   7,
+   8
+  ],
+  "reasons": {
+   "0": "Good character budget and decent peak visual activity.",
+   "1": "High peak visual activity and good character budget make this gap suitable for description.",
+   "2": "High peak visual activity and good character budget make this gap suitable for description.",
+   "3": "Moderate visual activity and sufficient character budget for a meaningful description.",
+   "4": "Long duration with good character budget and decent peak visual activity.",
+   "7": "Good character budget and sustained visual activity (high mean score).",
+   "8": "Very high peak visual activity and sufficient character budget for a critical description."
+  },
+  "note": "Gaps 5 and 6 were skipped due to very low visual activity (peak and mean scores), indicating static frames that do not warrant description despite adequate character budgets."
+ },
+ "trace": [
+  {
+   "agent": "coverage_planner",
+   "text": "{\n  \"selected\": [0, 1, 2, 3, 4, 7, 8],\n  \"reasons\": {\n    \"0\": \"Good character budget and decent peak visual activity.\",\n    \"1\": \"High peak visual activity and good character budget make this gap suitable for description.\",\n    \"2\": \"High peak visual activity and good character budget make this gap suitable for description.\",\n    \"3\": \"Moderate visual activity and sufficient character budget for a meaningful description.\",\n    \"4\": \"Long duration with good character budget and decent peak visual activity.\",\n    \"7\": \"Good character budget and sustained visual activity (high mean score).\",\n    \"8\": \"Very high peak visual activity and sufficient character budget for a critical description.\"\n  },\n  \"note\": \"Gaps 5 and 6 were skipped due to very low visual activity (peak and mean scores), indicating static frames that do not warrant description despite adequate character budgets.\"\n}"
+  }
+ ],
+ "report": {
+  "media": {
+   "path": "/tmp/sightread-media/nighttide.mp4",
+   "duration_s": 5256.566667
+  },
+  "settings": {
+   "noise_db": -26.0,
+   "min_gap_s": 4.0,
+   "headroom_ms": 250
+  },
+  "totals": {
+   "gaps": 7,
+   "fit": 7,
+   "overflow": 0,
+   "skipped": 0,
+   "described_seconds": 27.157,
+   "tightest_margin_ms": 794
+  },
+  "cues": [
+   {
+    "gap_index": 0,
+    "gap_start_s": 548.6805,
+    "gap_end_s": 553.612708,
+    "gap_duration_s": 4.932207999999946,
+    "char_budget": 40,
+    "text": "A man kisses a woman.",
+    "chars": 21,
+    "audio_path": "out/adk-nighttide/gap0000.take1.wav",
+    "clip_path": "out/adk-nighttide/gap0000.clip.mp4",
+    "rendered_duration_s": 2.250958,
+    "margin_ms": 2431,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 40,
+      "chars": 21,
+      "rendered_duration_s": 2.250958,
+      "margin_ms": 2431,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 1,
+    "gap_start_s": 2653.2625,
+    "gap_end_s": 2660.197833,
+    "gap_duration_s": 6.935333000000355,
+    "char_budget": 57,
+    "text": "A man in a light outfit stands in a room, then a shelf with jars.",
+    "chars": 65,
+    "audio_path": "out/adk-nighttide/gap0001.take1.wav",
+    "clip_path": "out/adk-nighttide/gap0001.clip.mp4",
+    "rendered_duration_s": 5.890958,
+    "margin_ms": 794,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 57,
+      "chars": 65,
+      "rendered_duration_s": 5.890958,
+      "margin_ms": 794,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 2,
+    "gap_start_s": 2683.530125,
+    "gap_end_s": 2689.564333,
+    "gap_duration_s": 6.03420799999958,
+    "char_budget": 49,
+    "text": "A young man in a sailor suit looks down.",
+    "chars": 40,
+    "audio_path": "out/adk-nighttide/gap0002.take1.wav",
+    "clip_path": "out/adk-nighttide/gap0002.clip.mp4",
+    "rendered_duration_s": 3.730958,
+    "margin_ms": 2053,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 49,
+      "chars": 40,
+      "rendered_duration_s": 3.730958,
+      "margin_ms": 2053,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 3,
+    "gap_start_s": 2730.637958,
+    "gap_end_s": 2734.811208,
+    "gap_duration_s": 4.17325000000028,
+    "char_budget": 29,
+    "text": "Woman faces man's back.",
+    "chars": 23,
+    "audio_path": "out/adk-nighttide/gap0003.take2.wav",
+    "clip_path": "out/adk-nighttide/gap0003.clip.mp4",
+    "rendered_duration_s": 2.450958,
+    "margin_ms": 1472,
+    "verdict": "FIT",
+    "attempts": 2,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 33,
+      "chars": 116,
+      "rendered_duration_s": 12.770958,
+      "margin_ms": -8848,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 29,
+      "chars": 23,
+      "rendered_duration_s": 2.450958,
+      "margin_ms": 1472,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 4,
+    "gap_start_s": 3597.802,
+    "gap_end_s": 3607.494792,
+    "gap_duration_s": 9.692791999999827,
+    "char_budget": 81,
+    "text": "A man lies in bed, looking troubled. He shifts his arm. A closed door. He's back in bed.",
+    "chars": 88,
+    "audio_path": "out/adk-nighttide/gap0004.take1.wav",
+    "clip_path": "out/adk-nighttide/gap0004.clip.mp4",
+    "rendered_duration_s": 7.890958,
+    "margin_ms": 1552,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 81,
+      "chars": 88,
+      "rendered_duration_s": 7.890958,
+      "margin_ms": 1552,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 7,
+    "gap_start_s": 4437.808479,
+    "gap_end_s": 4442.49275,
+    "gap_duration_s": 4.684271000000081,
+    "char_budget": 27,
+    "text": "Man in bed, curtains open.",
+    "chars": 26,
+    "audio_path": "out/adk-nighttide/gap0007.take3.wav",
+    "clip_path": "out/adk-nighttide/gap0007.clip.mp4",
+    "rendered_duration_s": 2.450958,
+    "margin_ms": 1983,
+    "verdict": "FIT",
+    "attempts": 3,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 38,
+      "chars": 32,
+      "rendered_duration_s": 4.650958,
+      "margin_ms": -217,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 2,
+      "char_budget": 28,
+      "chars": 30,
+      "rendered_duration_s": 4.570958,
+      "margin_ms": -137,
+      "verdict": "OVERFLOW"
+     },
+     {
+      "attempt": 3,
+      "char_budget": 27,
+      "chars": 26,
+      "rendered_duration_s": 2.450958,
+      "margin_ms": 1983,
+      "verdict": "FIT"
+     }
+    ]
+   },
+   {
+    "gap_index": 8,
+    "gap_start_s": 5117.804062,
+    "gap_end_s": 5122.178687,
+    "gap_duration_s": 4.374624999999469,
+    "char_budget": 35,
+    "text": "Black screen. Light behind clouds.",
+    "chars": 34,
+    "audio_path": "out/adk-nighttide/gap0008.take1.wav",
+    "clip_path": "out/adk-nighttide/gap0008.clip.mp4",
+    "rendered_duration_s": 2.490958,
+    "margin_ms": 1634,
+    "verdict": "FIT",
+    "attempts": 1,
+    "attempt_log": [
+     {
+      "attempt": 1,
+      "char_budget": 35,
+      "chars": 34,
+      "rendered_duration_s": 2.490958,
+      "margin_ms": 1634,
+      "verdict": "FIT"
+     }
+    ]
+   }
+  ],
+  "skipped": [],
+  "verified": {
+   "checked": 7,
+   "agreed": 7,
+   "disagreed": []
+  }
+ }
+}

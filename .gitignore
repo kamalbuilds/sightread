@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.uicraft-read.json
+out/**/*.clip.mp4
+.env
