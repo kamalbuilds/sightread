@@ -63,7 +63,13 @@ class Take:
     verdict: str
 
 
-def _default_chars_per_second() -> float:
+def default_chars_per_second() -> float:
+    """The measured speaking rate, read off `ad.fit.target_chars` at call time.
+
+    Nothing else in this repo is allowed to write the number down. It has been
+    wrong once already, by a factor that overran three real silences, and a second
+    copy is how the wrong one survives the fix.
+    """
     sig = inspect.signature(_fit_mod.target_chars)
     return sig.parameters["chars_per_second"].default
 
@@ -222,7 +228,7 @@ def conform_gap(
 
     if chars_per_second is None:
         initial_budget = target_chars(gap.duration_s, headroom_ms=headroom_ms)
-        effective_cps = _default_chars_per_second()
+        effective_cps = default_chars_per_second()
     else:
         initial_budget = target_chars(
             gap.duration_s,

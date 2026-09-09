@@ -42,6 +42,7 @@ __all__ = [
     "USER_ID",
     "DescribeRun",
     "GeminiRequired",
+    "initial_state",
     "model_available",
     "require_model",
     "resolve_model",
@@ -68,6 +69,26 @@ class DescribeRun:
     report: dict = field(default_factory=dict)
     steps: list[dict] = field(default_factory=list)
     trace: list[dict] = field(default_factory=list)
+
+
+def initial_state(media_path: str, **overrides) -> dict:
+    """Build the session state ADK starts a run from, through `graph.ADState`.
+
+    Not a hand-written dict. ADK resolves each node's parameters out of the session
+    state and does not apply the `state_schema` defaults when filling it, so a key
+    omitted here fails inside the node that needed it, after everything upstream has
+    already run. Building the dict from the model means the schema's defaults are the
+    run's defaults and a node can only ask for a field the model declares.
+
+    `chars_per_second` left as None falls through to the model's default, which reads
+    the measured rate off `ad.fit.target_chars`. Nothing here carries a copy of it.
+    """
+    from agent.graph import ADState
+
+    given = {k: v for k, v in overrides.items() if v is not None}
+    given.setdefault("project", os.environ.get("GOOGLE_CLOUD_PROJECT", ""))
+    given.setdefault("location", os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"))
+    return ADState(media_path=media_path, **given).model_dump()
 
 
 async def _drive(state: dict, on_step: Callable[[list[dict]], None] | None):
@@ -118,29 +139,33 @@ def run_pipeline(
     noise_db: float = -26.0,
     min_gap_s: float = 4.0,
     headroom_ms: int = 250,
-    chars_per_second: float = 8.6,
+    chars_per_second: float | None = None,
     max_attempts: int = 3,
     project: str | None = None,
     location: str | None = None,
     on_step: Callable[[list[dict]], None] | None = None,
 ) -> DescribeRun:
-    """Measure, plan coverage, draft, shorten, re-measure, adjudicate and report."""
+    """Measure, plan coverage, draft, shorten, re-measure, adjudicate and report.
+
+    *chars_per_second* left at None means the measured default on
+    `ad.fit.target_chars` applies. This function does not carry a copy of it.
+    """
     require_model()
     use_vertex()
     model = resolve_model()
     run_id = str(uuid.uuid4())
-    state = {
-        "media_path": media_path,
-        "out_dir": out_dir,
-        "noise_db": noise_db,
-        "min_gap_s": min_gap_s,
-        "headroom_ms": headroom_ms,
-        "chars_per_second": chars_per_second,
-        "max_attempts": max_attempts,
-        "project": project or os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
-        "location": location or os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"),
-        "run_id": run_id,
-    }
+    state = initial_state(
+        media_path,
+        out_dir=out_dir,
+        noise_db=noise_db,
+        min_gap_s=min_gap_s,
+        headroom_ms=headroom_ms,
+        chars_per_second=chars_per_second,
+        max_attempts=max_attempts,
+        project=project,
+        location=location,
+        run_id=run_id,
+    )
     final, trace = asyncio.run(_drive(state, on_step))
     return DescribeRun(
         run_id=run_id,
@@ -172,6 +197,12 @@ def main() -> int:
     ap.add_argument("--noise-db", type=float, default=-26.0)
     ap.add_argument("--min-gap-s", type=float, default=4.0)
     ap.add_argument("--max-attempts", type=int, default=3)
+    # Deliberately no default. Omitting the flag lets ad.fit's measured default
+    # apply, which keeps the rate in exactly one place. A number on this line
+    # would be a second copy of one that has already been wrong once. Raising it
+    # above the measured range is how the shortening loop gets exercised on a film
+    # whose silences all fit on the first take.
+    ap.add_argument("--chars-per-second", type=float, default=None)
     ap.add_argument("--report", default=None)
     args = ap.parse_args()
 
@@ -180,6 +211,7 @@ def main() -> int:
         out_dir=args.out_dir,
         noise_db=args.noise_db,
         min_gap_s=args.min_gap_s,
+        chars_per_second=args.chars_per_second,
         max_attempts=args.max_attempts,
         on_step=lambda steps: print(
             f"[{steps[-1]['node']}] {'ok' if steps[-1]['ok'] else 'FAILED'}: "

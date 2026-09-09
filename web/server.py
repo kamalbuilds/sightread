@@ -143,30 +143,48 @@ def rate() -> JSONResponse:
     return JSONResponse({"summary": summarise(rates), "rates": sorted(rates)})
 
 
-@app.get("/api/adk")
-def adk() -> JSONResponse:
-    """The last full ADK graph run: what the planner chose, and what verify found.
+#: The graph runs on disk, newest first. Each is a directory under out/ holding
+#: run.json, every take as a WAV, and the clip each description was written from.
+ADK_RUNS = ("adk-nighttide", "adk-nighttide-tight")
 
-    The planner's selections matter only next to the verify block. A model that
+
+@app.get("/api/adk")
+def adk(run: str | None = None) -> JSONResponse:
+    """One full ADK graph run: the path it took, and what verify found at the end.
+
+    The model's selections matter only next to the verify block. A model that
     picked well and a model that picked badly both produce a list of indices; only
     an independent re-measurement of the rendered files says whether what came out
-    the other end holds up.
+    the other end holds up. The steps are returned verbatim, including the route
+    each branch took, so the graph the page draws is the graph that ran.
     """
-    path = OUT / "adk-nighttide" / "run.json"
-    if not path.is_file():
+    available = [slug for slug in ADK_RUNS if (OUT / slug / "run.json").is_file()]
+    if not available:
         raise HTTPException(404, "no ADK run on disk; run: python agent/pipeline.py <film>")
-    doc = json.loads(path.read_text())
+    slug = run or available[0]
+    if slug not in available:
+        raise HTTPException(404, f"no ADK run {slug}; have {available}")
+
+    doc = json.loads((OUT / slug / "run.json").read_text())
     report = doc.get("report") or {}
     return JSONResponse(
         {
+            "slug": slug,
+            "available": available,
             "run_id": doc.get("run_id"),
+            "model": doc.get("model", ""),
             "steps": doc.get("steps", []),
             "plan": doc.get("plan", {}),
+            "rounds": doc.get("rounds", 0),
+            "verdict": doc.get("verdict", {}),
+            "escalation": doc.get("escalation", {}),
             "verified": report.get("verified", {}),
             "totals": report.get("totals", {}),
+            "settings": report.get("settings", {}),
             "cues": [
                 {k: c[k] for k in ("gap_index", "gap_duration_s", "text", "chars",
-                                   "rendered_duration_s", "margin_ms", "verdict", "attempts")}
+                                   "rendered_duration_s", "margin_ms", "verdict",
+                                   "attempts", "attempt_log")}
                 for c in report.get("cues", [])
             ],
         }

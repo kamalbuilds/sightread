@@ -7,9 +7,6 @@ All captured stderr blocks are real ffmpeg 9.0.1 output from the Night Tide run.
 from __future__ import annotations
 
 import inspect
-import os
-
-import pytest
 
 import ad.conform as _conform_mod
 import ad.fit as _fit_mod
@@ -180,52 +177,62 @@ def test_gap_indices_are_chronological() -> None:
 _GAP0002_DURATION_S = 2.184
 _GAP0002_INDEX = 2
 
-_TAKE1_PATH = "out/nighttide/gap0002.take1.wav"
-_TAKE2_PATH = "out/nighttide/gap0002.take2.wav"
+_TAKE1_NAME = "gap0002.take1.wav"
+_TAKE2_NAME = "gap0002.take2.wav"
 
 
-def test_check_fit_catches_a_real_overrun() -> None:
+def _take(shipped_takes, name: str) -> str:
+    """One shipped take, or a failure naming it.
+
+    The directory gate lives in tests/conftest.py and decides skip against fail. By
+    the time this runs the directory has takes in it, so a specific file missing is
+    a broken checkout rather than an unconfigured one, and it is red.
+    """
+    path = shipped_takes / name
+    assert path.is_file(), (
+        f"{path} is absent while other takes are present, so this checkout is "
+        "incomplete rather than unconfigured"
+    )
+    return str(path)
+
+
+def test_check_fit_catches_a_real_overrun(shipped_takes, ffmpeg_tools) -> None:
     """gap0002.take1.wav is 6.130958 s against a 2.184 s gap: must be OVERFLOW."""
-    if not os.path.exists(_TAKE1_PATH):
-        pytest.skip(f"{_TAKE1_PATH} not present")
     result = _fit_mod.check_fit(
         _GAP0002_INDEX,
         _GAP0002_DURATION_S,
-        _TAKE1_PATH,
+        _take(shipped_takes, _TAKE1_NAME),
         headroom_ms=250,
     )
     assert result.verdict == "OVERFLOW"
     assert result.margin_ms == -4197
 
 
-def test_check_fit_accepts_the_take_that_fit() -> None:
+def test_check_fit_accepts_the_take_that_fit(shipped_takes, ffmpeg_tools) -> None:
     """gap0002.take2.wav fits inside the gap with 3 ms of margin."""
-    if not os.path.exists(_TAKE2_PATH):
-        pytest.skip(f"{_TAKE2_PATH} not present")
     result = _fit_mod.check_fit(
         _GAP0002_INDEX,
         _GAP0002_DURATION_S,
-        _TAKE2_PATH,
+        _take(shipped_takes, _TAKE2_NAME),
         headroom_ms=250,
     )
     assert result.verdict == "FIT"
     assert result.margin_ms == 3
 
 
-def test_headroom_is_subtracted_once() -> None:
+def test_headroom_is_subtracted_once(shipped_takes, ffmpeg_tools) -> None:
     """Raising headroom_ms by 500 must lower margin_ms by exactly 500."""
-    if not os.path.exists(_TAKE2_PATH):
-        pytest.skip(f"{_TAKE2_PATH} not present")
+    take = _take(shipped_takes, _TAKE2_NAME)
     base = _fit_mod.check_fit(
         _GAP0002_INDEX,
         _GAP0002_DURATION_S,
-        _TAKE2_PATH,
+        take,
         headroom_ms=250,
     )
     raised = _fit_mod.check_fit(
         _GAP0002_INDEX,
         _GAP0002_DURATION_S,
-        _TAKE2_PATH,
+        take,
         headroom_ms=750,
     )
     assert raised.margin_ms == base.margin_ms - 500

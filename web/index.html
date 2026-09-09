@@ -164,11 +164,15 @@ h2{font:600 19px/1.2 var(--sans);margin:0 0 6px}
   padding:12px 13px;display:flex;flex-direction:column;gap:5px;min-width:0;
 }
 .node.model{border-color:var(--amber-dim);background:#14100a}
-.nname{font:600 12px/1.2 var(--mono);color:var(--fg)}
+.node.flagged{border-color:var(--red)}
+.nname{font:600 12px/1.2 var(--mono);color:var(--fg);display:flex;gap:7px;align-items:baseline}
 .node.model .nname{color:var(--amber)}
+.nround{font:400 9.5px/1 var(--mono);color:var(--fg-3);letter-spacing:0.06em}
 .nwhat{font-size:11.5px;line-height:1.4;color:var(--fg-3)}
-.ntag{font:500 9.5px/1 var(--mono);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-3);margin-top:auto;padding-top:6px}
+.nsum{font:400 10.5px/1.4 var(--mono);color:var(--fg-2)}
+.ntag{font:500 9.5px/1.3 var(--mono);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-3);margin-top:auto;padding-top:6px;display:flex;flex-direction:column;gap:3px}
 .node.model .ntag{color:var(--amber-dim)}
+.nroute{color:var(--fg-2);letter-spacing:0.06em;text-transform:none}
 .arrow{align-self:center;width:14px;height:1px;background:var(--line-2);position:relative;flex:0 0 14px}
 .arrow::after{content:"";position:absolute;right:0;top:-2.5px;border-left:5px solid var(--line-2);border-top:3px solid transparent;border-bottom:3px solid transparent}
 .verifybar{
@@ -181,6 +185,13 @@ h2{font:600 19px/1.2 var(--sans);margin:0 0 6px}
 .verifybar b.bad{color:var(--red)}
 .vsep{width:1px;height:15px;background:var(--line-2)}
 .runid{color:var(--fg-3);font-size:11.5px;margin-left:auto}
+.verdict{margin-top:12px;border:1px solid var(--line);border-left:2px solid var(--amber-dim);background:#0c0c10;border-radius:0 var(--r) var(--r) 0;padding:13px 15px}
+.verdict.hold{border-left-color:var(--red)}
+.vlabel{font:600 9.5px/1 var(--mono);letter-spacing:0.13em;color:var(--amber)}
+.verdict.hold .vlabel{color:var(--red)}
+.verdict p{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--fg-2);max-width:88ch}
+.verdict .vover{color:var(--red)}
+.verdict .vwork{color:var(--fg-3);font-size:12.5px}
 .picks{margin-top:12px;display:grid;gap:5px}
 .pick{display:flex;gap:13px;align-items:baseline;font-size:12.5px;color:var(--fg-2)}
 .pick .why{color:var(--fg-3)}
@@ -260,12 +271,21 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:26px 0 60px;colo
 
   <section>
     <h2>The graph, and the step that cannot be skipped</h2>
-    <p class="sub">A Google ADK 2.8 <span class="mono">Workflow</span>. Two nodes call Gemini, and
-    neither of them produces a number that reaches a verdict: the planner chooses which silences
-    deserve a listener's attention, and <span class="mono">conform</span> gets the line written and
-    spoken, but ffprobe decides whether it fit. <span class="mono">verify</span> then re-measures every
-    accepted WAV from disk and recomputes its verdict independently, so a conform step that reported a
-    fit it never measured would surface here as a disagreement.</p>
+    <p class="sub">A Google ADK 2.8 <span class="mono">Workflow</span>. Three
+    <span class="mono">LlmAgent</span> nodes decide three different things, and none of them produces a
+    number that reaches a verdict. <span class="mono">coverage_planner</span> chooses which silences
+    deserve a listener's attention. <span class="mono">shorten</span> decides what to cut from a line
+    whose spoken length already overran, against a character ceiling computed from the overrun ffprobe
+    measured. <span class="mono">adjudicate</span> decides whether the pass is deliverable to a mixer or
+    goes back to a human describer.</p>
+    <p class="sub">The path below is the one this run took, read out of the graph's own step records.
+    <span class="mono">shorten</span> sits in a cycle closed by a routed edge, so how many model turns a
+    run spends is set at runtime by ffprobe rather than written into the topology, and
+    <span class="mono">dispatch</span> takes its branch on one structured field. Both branches out of
+    <span class="mono">dispatch</span> reach <span class="mono">report</span>, and every path reaches
+    <span class="mono">verify</span> first, which re-measures each rendered WAV from disk and recomputes
+    its verdict with no knowledge of what was reported. A step that claimed a fit it never measured
+    surfaces there as a disagreement.</p>
     <div id="adk"></div>
   </section>
 
@@ -484,46 +504,82 @@ function renderFinding(data) {
     second measurement makes it visible.</p>`;
 }
 
-/** The tag says what DECIDES at each node, not what runs there. `conform` calls
- *  Gemini twice per attempt and would be mislabelled as deterministic, but the
- *  accept or reject is ffprobe's, which is the distinction the product turns on. */
-const NODES = [
-  ['measure',          'ffmpeg silencedetect over the film',        false, 'ffmpeg decides'],
-  ['survey',           'ffmpeg scdet, visual activity per silence', false, 'ffmpeg decides'],
-  ['coverage_planner', 'which silences are worth describing',       true,  'gemini decides'],
-  ['conform',          'describe, render, re-measure, retry',       true,  'gemini writes, ffprobe decides'],
-  ['verify',           're-measure every accepted WAV from disk',   false, 'ffprobe decides'],
-  ['report',           'assemble the conform report',               false, 'no model call'],
-];
+/** The tag says what DECIDES at each node, not what runs there. `draft` calls
+ *  Gemini twice per gap and would be mislabelled as deterministic, but the accept
+ *  or reject is ffprobe's, which is the distinction the product turns on.
+ *  `shorten` writes prose and cannot accept its own line; `dispatch` reads one
+ *  field of a model verdict and is allowed to overrule it. */
+const NODES = {
+  measure:          ['ffmpeg silencedetect over the film',           false, 'ffmpeg decides'],
+  survey:           ['ffmpeg scdet, visual activity per silence',    false, 'ffmpeg decides'],
+  coverage_planner: ['which silences are worth describing',          true,  'gemini decides'],
+  draft:            ['describe the picture, speak it, measure it',   true,  'gemini writes, ffprobe decides'],
+  shorten:          ['what to cut from a line that overran',         true,  'gemini writes, ffprobe decides'],
+  retake:           ['speak the cut line, measure it again',         false, 'ffprobe decides'],
+  verify:           ['re-measure every rendered WAV from disk',      false, 'ffprobe decides'],
+  adjudicate:       ['deliverable, or back to a describer',          true,  'gemini decides'],
+  dispatch:         ['takes the branch, and can overrule it',        false, 'measurement overrules'],
+  escalate:         ['hand the gaps back with the numbers',          false, 'no model call'],
+  report:           ['assemble the conform report',                  false, 'no model call'],
+};
 
 /** How many silences the measure node actually found, which is the denominator
  *  the planner chose from. Reading it off the cues would only ever count the ones
  *  it picked, so the ratio would always read as complete coverage. */
 function measured(d) {
-  const step = (d.steps || []).find(s => s.node === 'measure' || s.step === 'measure');
-  return (step && (step.gap_count ?? step.data?.gap_count)) ?? (d.plan.selected || []).length;
+  const step = (d.steps || []).find(s => s.node === 'measure');
+  return (step && step.gap_count) ?? (d.plan.selected || []).length;
 }
 
+/** The graph is drawn from the steps the run recorded, not from a fixed list, so
+ *  a run that went round the shortening cycle twice shows two `retake` nodes and a
+ *  run that published shows no `escalate`. A static diagram would look identical
+ *  either way, which is the failure mode this section exists to avoid. */
 function renderAdk(d) {
   const v = d.verified || {};
-  const chosen = new Set(d.plan.selected || []);
+  const verdict = d.verdict || {};
+  const esc_ = d.escalation || {};
+  const steps = d.steps || [];
   const reasons = d.plan.reasons || {};
+
+  const path = steps.map((s, i) => {
+    const [what, model, tag] = NODES[s.node] || ['', false, ''];
+    const route = s.route ? `<span class="nroute">&rarr; ${esc(s.route)}</span>` : '';
+    const round = s.round ? `<span class="nround">round ${s.round}</span>` : '';
+    return `
+      <div class="node ${model ? 'model' : ''} ${s.ok ? '' : 'flagged'}">
+        <span class="nname">${esc(s.node)}${round}</span>
+        <span class="nwhat">${what}</span>
+        <span class="nsum">${esc(s.summary)}</span>
+        <span class="ntag">${tag}${route}</span>
+      </div>`;
+  }).join('<div class="arrow"></div>');
+
+  const rounds = v.rounds ?? 0;
+  const shipped = verdict.disposition === 'publish';
+
   document.getElementById('adk').innerHTML = `
-    <div class="graph">
-      ${NODES.map(([name, what, touchesModel, tag]) => `
-        <div class="node ${touchesModel ? 'model' : ''}">
-          <span class="nname">${name}</span>
-          <span class="nwhat">${what}</span>
-          <span class="ntag">${tag}</span>
-        </div>`).join('<div class="arrow"></div>')}
-    </div>
+    <div class="graph">${path}</div>
     <div class="verifybar">
       <span><b class="${v.disagreed && v.disagreed.length ? 'bad' : 'good'}">${v.agreed ?? 0}/${v.checked ?? 0}</b>
-      accepted takes re-measured from disk, verdicts agreed</span>
+      rendered takes re-measured from disk, verdicts agreed</span>
       <span class="vsep"></span>
-      <span><b>${(d.plan.selected || []).length}</b> of ${measured(d)} silences selected by the planner</span>
+      <span><b>${(d.plan.selected || []).length}</b> of ${measured(d)} silences selected</span>
       <span class="vsep"></span>
-      <span class="mono runid">run ${(d.run_id || '').slice(0, 8)}</span>
+      <span><b>${rounds}</b> shortening ${rounds === 1 ? 'round' : 'rounds'}</span>
+      <span class="vsep"></span>
+      <span class="mono runid">run ${(d.run_id || '').slice(0, 8)} &middot; ${esc(d.model || 'gemini')}</span>
+    </div>
+    <div class="verdict ${shipped ? 'ship' : 'hold'}">
+      <span class="vlabel">${shipped ? 'DELIVERABLE' : 'BACK TO A DESCRIBER'}</span>
+      <p>${esc(verdict.reason || 'no verdict recorded')}</p>
+      ${verdict.override ? `<p class="vover">Overruled by measurement: ${esc(verdict.override)}</p>` : ''}
+      ${(esc_.hand_back || []).length ? `<p class="vwork">Gaps handed back:
+        <span class="mono">${(esc_.hand_back || []).join(', ')}</span>${
+        (esc_.added_by_measurement || []).length
+          ? ` &middot; <span class="mono">${esc_.added_by_measurement.join(', ')}</span> added by measurement, not asked for`
+          : ''}</p>` : ''}
+      ${esc_.residual_work ? `<p class="vwork">Residual work: ${esc(esc_.residual_work)}</p>` : ''}
     </div>
     <div class="picks">
       ${Object.entries(reasons).map(([i, why]) => `

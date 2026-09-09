@@ -61,7 +61,11 @@ class ADState(BaseModel):
     noise_db: float = -26.0
     min_gap_s: float = 4.0
     headroom_ms: int = 250
-    chars_per_second: float = 8.6
+    # Read off ad.fit.target_chars at call time. This class does not get to hold a
+    # copy of the speaking rate; see ad.conform.default_chars_per_second.
+    chars_per_second: float = Field(
+        default_factory=_conform_mod.default_chars_per_second
+    )
     max_attempts: int = 3
     project: str = ""
     location: str = "us-central1"
