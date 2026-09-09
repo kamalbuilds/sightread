@@ -72,6 +72,10 @@ residual_work   Review description for gap 8 to ensure it fits comfortably
 
 ![The graph as it ran, each node carrying what it decided and the branch it took, with the verdict underneath](img/graph-and-verdict.png)
 
+The same run read back off the live service, with the three Gemini nodes marked:
+
+![GET /api/adk on the hosted service, showing every node the run executed and the adjudicator's structured verdict](img/gemini-nodes-live.png)
+
 ### The takes that did not survive
 
 Twelve silences across two runs produced nineteen takes, of which seven were rejected on measurement:
@@ -89,6 +93,10 @@ Twelve silences across two runs produced nineteen takes, of which seven were rej
 Every one is a WAV on disk, and the hosted page plays them. The 15ms rejection matters as much as the 7328ms one: it is precisely the case a person mixing by ear lets through.
 
 ![Every rejected take on the hosted page, each playable against the silence it was written for](img/rejected-takes.png)
+
+Take by take, against the measured silence. The track is the silence, the shaded band inside it is what is usable after 250ms of headroom at each end, and a bar running past the band was rejected:
+
+![The take ladder, showing gap 3's first take at 11.251s rejected against a 4.173s silence and its second take accepted at 2.451s](img/silence-ladder.png)
 
 You can check the chain without cloning anything:
 

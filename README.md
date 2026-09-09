@@ -149,6 +149,49 @@ threshold is too tight, because nobody has measured what a mixer will tolerate.
 `dispatch` then routed on that field, `escalate` recorded the hand-back, and the CLI
 exited 3 rather than 0.
 
+### The same graph at a 2s threshold, where the shortening cycle earns its place
+
+```
+python agent/pipeline.py nighttide.mp4 --min-gap-s 2.0 --noise-db -26 \
+  --out-dir out/adk-nighttide-tight --report out/adk-nighttide-tight/run.json
+```
+
+Seventy-six silences at 2 seconds or longer. The path the run took, from its own
+step records, served at `/api/adk?run=adk-nighttide-tight`:
+
+```
+       measure           found 76 gaps
+       survey            surveyed 76 gaps
+GEMINI coverage_planner  selected 25 of 76 silences
+       draft             13 of 25 first takes fit, 10 to shorten   -> shorten
+GEMINI shorten           round 1: rewrote 10 lines
+       retake            round 1: rendered 9, 8 now fit, 1 still over  -> shorten
+GEMINI shorten           round 2: rewrote 1 line
+       retake            round 2: rendered 1, 1 now fit, 0 still over  -> settled
+       verify            checked 25, agreed 25, disagreed 0
+GEMINI adjudicate        escalate, 5 to hand back
+       dispatch          escalate -> escalate                     -> escalate
+       escalate          5 gaps handed back to a describer
+       report            report assembled, 22 cues deliverable
+```
+
+Two turns round the cycle, because `retake` measured a take that still overran and
+routed back. Round 1 rewrote 10 lines and rendered 9 of them: the tenth came back
+as `'Man sits.'`, 9 characters, and was refused before the TTS call.
+
+Nine silences never reached the shortener at all. Their measured overrun left a
+ceiling of 1 or 2 characters, which is not a description, and they were handed to a
+describer with the arithmetic attached:
+
+    gap 8   the measured overrun leaves 1 characters, under the 11 a
+            description needs. This 2.581s silence cannot hold a spoken
+            line at the measured rate.
+
+22 lines fit, 3 stayed OVERFLOW, and the shortest accepted line is exactly 11
+characters. The adjudicator handed back all three overflows plus two lines it
+judged too tight, and `dispatch` would have overridden a `publish` here regardless,
+because a row `ffprobe` calls OVERFLOW cannot be published.
+
 ### The same film at a 4s threshold, take by take
 
 Nine silences of 4s or longer, at a -26dB threshold, from the deterministic CLI:

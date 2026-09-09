@@ -143,9 +143,13 @@ def rate() -> JSONResponse:
     return JSONResponse({"summary": summarise(rates), "rates": sorted(rates)})
 
 
-#: The graph runs on disk, newest first. Each is a directory under out/ holding
-#: run.json, every take as a WAV, and the clip each description was written from.
-ADK_RUNS = ("adk-nighttide", "adk-nighttide-tight")
+#: The graph runs on disk. The tight one is first because it is the one where the
+#: shortening cycle earns its place: at a 2 second threshold the silences are short
+#: enough that ten of twenty five first takes overran, so the run goes round the
+#: cycle twice and nine silences are refused outright as too short to hold a line.
+#: The 4 second run is the clean pass, and a page that only ever showed a clean
+#: pass would be showing the easy half of the product.
+ADK_RUNS = ("adk-nighttide-tight", "adk-nighttide")
 
 
 @app.get("/api/adk")

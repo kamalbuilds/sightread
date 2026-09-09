@@ -185,6 +185,14 @@ h2{font:600 19px/1.2 var(--sans);margin:0 0 6px}
 .verifybar b.bad{color:var(--red)}
 .vsep{width:1px;height:15px;background:var(--line-2)}
 .runid{color:var(--fg-3);font-size:11.5px;margin-left:auto}
+.runpick{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.rp{display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;
+  background:#0c0c10;border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;color:var(--fg-2)}
+.rp:hover{border-color:var(--fg-3)}
+.rp.on{border-color:var(--amber-dim);background:#14100a}
+.rpn{font:600 11.5px/1 var(--mono);color:var(--fg)}
+.rp.on .rpn{color:var(--amber)}
+.rpw{font-size:11.5px;color:var(--fg-3)}
 .adjverdict{margin-top:12px;border:1px solid var(--line);border-left:2px solid var(--amber-dim);background:#0c0c10;border-radius:0 var(--r) var(--r) 0;padding:13px 15px}
 .adjverdict.hold{border-left-color:var(--red)}
 .vlabel{font:600 9.5px/1 var(--mono);letter-spacing:0.13em;color:var(--amber)}
@@ -558,7 +566,21 @@ function renderAdk(d) {
   const rounds = v.rounds ?? 0;
   const shipped = verdict.disposition === 'publish';
 
+  const RUN_LABELS = {
+    'adk-nighttide-tight': ['2s threshold', '76 silences, short enough that the shortening cycle runs'],
+    'adk-nighttide': ['4s threshold', '9 silences, room for real sentences'],
+  };
+  const picker = (d.available || []).length > 1 ? `
+    <div class="runpick">
+      ${(d.available || []).map(slug => {
+        const [name, why] = RUN_LABELS[slug] || [slug, ''];
+        return `<button class="rp ${slug === d.slug ? 'on' : ''}" data-run="${slug}">
+          <span class="rpn">${name}</span><span class="rpw">${why}</span></button>`;
+      }).join('')}
+    </div>` : '';
+
   document.getElementById('adk').innerHTML = `
+    ${picker}
     <div class="graph">${path}</div>
     <div class="verifybar">
       <span><b class="${v.disagreed && v.disagreed.length ? 'bad' : 'good'}">${v.agreed ?? 0}/${v.checked ?? 0}</b>
@@ -588,6 +610,13 @@ function renderAdk(d) {
           <span class="why">${esc(why)}</span>
         </div>`).join('')}
     </div>`;
+
+  for (const b of document.querySelectorAll('#adk .rp')) {
+    b.addEventListener('click', async () => {
+      const r = await fetch('/api/adk?run=' + encodeURIComponent(b.dataset.run));
+      if (r.ok) renderAdk(await r.json());
+    });
+  }
 }
 
 function renderBob(data) {
