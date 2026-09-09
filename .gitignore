@@ -5,3 +5,6 @@ __pycache__/
 .uicraft-read.json
 out/**/*.clip.mp4
 .env
+
+# internal status board, never shipped to judges
+.progress/

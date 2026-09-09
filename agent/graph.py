@@ -223,6 +223,10 @@ def _cue_from_take(take: _conform_mod.Take, gap: dict, cps: float) -> dict:
             {
                 "attempt": take.attempt,
                 "char_budget": take.char_budget,
+                # The line each take spoke, not only the one that survived. Without
+                # it the rejected takes on disk have no text beside them and the
+                # evidence for why one was thrown out is gone.
+                "text": take.text,
                 "chars": take.chars,
                 "rendered_duration_s": take.rendered_duration_s,
                 "margin_ms": take.margin_ms,
@@ -399,6 +403,7 @@ async def retake(
             {
                 "attempt": attempt,
                 "char_budget": ceiling,
+                "text": take.text,
                 "chars": take.chars,
                 "rendered_duration_s": take.rendered_duration_s,
                 "margin_ms": take.margin_ms,

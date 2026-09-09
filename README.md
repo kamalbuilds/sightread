@@ -24,27 +24,78 @@ silence or the true length of the recorded line until the last step.
 
 Both of those are measurable before anyone speaks.
 
+Live: <https://sightread-387894104564.us-central1.run.app>
+
 ## What actually runs
 
-    measure            ffmpeg silencedetect over the film            deterministic
-    survey             ffmpeg scdet, visual activity per silence     deterministic
-    coverage_planner   which silences are worth describing                  MODEL
-    conform            describe, render, re-measure, retry shorter   deterministic
-    verify             re-measure every accepted WAV from disk       deterministic
-    report             assemble the conform report                   deterministic
+A `google.adk.workflow.Workflow` in `agent/graph.py`, driven by
+`agent/pipeline.py`. Seven function nodes, three `LlmAgent` nodes, three routed
+branches, one of which closes a cycle.
 
-That is a `google.adk.workflow.Workflow` in `agent/graph.py`, driven by
-`agent/pipeline.py`. The model never produces a number that reaches a verdict. It
-decides which silences deserve a listener's attention, and ffmpeg decides whether
-anything fit.
+    measure       ffmpeg silencedetect over the film              ffmpeg decides
+    survey        ffmpeg scdet, visual activity per silence       ffmpeg decides
+    coverage      which silences are worth describing             GEMINI decides
+    draft         describe the picture, speak it, measure it      gemini writes, ffprobe decides
+    shorten       what to cut from a line that overran            GEMINI writes
+    retake        speak the cut line, measure it again            ffprobe decides
+    verify        re-measure every rendered WAV from disk         ffprobe decides
+    adjudicate    deliverable, or back to a describer             GEMINI decides
+    dispatch      takes the branch, and can overrule it           measurement overrules
+    escalate      hand the gaps back with the numbers             no model call
+    report        assemble the conform report                     no model call
 
-`verify` re-measures every accepted WAV independently and recomputes its verdict,
-because a conform step that reported a fit it never measured would otherwise be
-invisible. There is no route around it.
+```
+START -> measure -> survey -> coverage_planner -> draft
+draft      -> shorten     a take overran
+           -> verify      every take fit
+shorten    -> retake
+retake     -> shorten     a take still overran and rounds remain
+           -> verify      otherwise
+verify     -> adjudicate -> dispatch
+dispatch   -> escalate    the run needs a human describer
+           -> report      it is deliverable as measured
+escalate   -> report
+```
 
-Gemini is required. There is no deterministic fallback for the coverage planner,
-because a fallback that produced the same shape of plan would make the model
-decorative: you could delete it and the product would behave identically.
+The three model nodes decide three different things, and none of them produces a
+number that reaches a verdict.
+
+`coverage_planner` picks which measured silences earn a line, from the gap lengths
+and the per-gap scene-change scores. It cannot invent a gap index; `draft` drops
+any index that was not in the measurement and records the discard.
+
+`shorten` decides which words leave a line whose real spoken length is already
+known. It is handed the line, the measured overrun in milliseconds, and a character
+ceiling computed from that overrun at the observed speaking rate. Choosing whether
+to lose the adjective, the second sentence or the set dressing is the judgement;
+the ceiling is arithmetic. Coming in under the ceiling does not make a line
+accepted and coming in over it does not make one rejected, because `retake` renders
+whatever comes back and ffprobe decides.
+
+`adjudicate` decides whether the pass is deliverable to a mixer or goes back to a
+human describer, and names the gaps a person has to take over. `dispatch` takes the
+branch on that one field and can overrule it: an unrecognised disposition routes to
+a person, a re-measurement disagreement overrides any verdict, and `publish` is not
+available while a row is OVERFLOW. `escalate` hands back every non-FIT gap whether
+the adjudicator listed it or not, so the model can widen that set and never narrow
+it.
+
+Because `retake` routes back into `shorten` on a routed edge, the number of model
+turns in a run is set at runtime by ffprobe rather than written into the topology.
+A film whose silences all fit on the first take spends one model turn per gap; one
+that does not spends as many as the attempt cap allows.
+
+`verify` re-measures every rendered WAV independently and recomputes its verdict,
+because a step that reported a fit it never measured would otherwise be invisible.
+There is no route around it: every path out of `draft` reaches `verify`, and
+`report` is only reachable through it.
+
+Gemini is required and there is no deterministic stand-in for any of the three
+model nodes, because a stand-in that produced the same shape of output would make
+the model decorative: you could delete it and the product would behave identically.
+`build_workflow` raises before it constructs a single node when this process cannot
+reach a model, rather than discovering it inside the first `LlmAgent` after the
+whole silencedetect pass over an 87 minute film has already been spent.
 
 ## Results on a real film
 
@@ -52,7 +103,55 @@ Night Tide (1961), public domain, from archive.org. The full 87 minute film,
 5256.567s by ffprobe. Every figure below came from a measurement, and the report
 JSON and every rendered WAV, accepted and rejected, are in `out/`.
 
-Nine silences of 4s or longer, at a -26dB threshold:
+### One graph run, end to end
+
+```
+python agent/pipeline.py nighttide.mp4 --min-gap-s 4.0 --noise-db -26 \
+  --out-dir out/adk-nighttide --report out/adk-nighttide/run.json
+```
+
+Nine silences of 4s or longer measured, six selected, six fit, all six verdicts
+reproduced by an independent re-measurement from disk. Run
+`1c212e66-9ecd-4095-b605-5c6a742f8a79`, on `gemini-2.5-flash`, served at
+`/api/adk`:
+
+| silence | length | line | chars | spoken | margin | takes |
+|---|---|---|---|---|---|---|
+| 00:09:08.681 | 4.932s | A man kisses a woman. | 21 | 2.371s | +2311ms | 1 |
+| 00:44:13.262 | 6.935s | A man stands in a room with shelves. Jars are on a shelf. | 57 | 5.531s | +1154ms | 1 |
+| 00:44:43.530 | 6.034s | A man in a sailor suit looks down. | 34 | 3.331s | +2453ms | 1 |
+| 00:59:57.802 | 9.693s | A man lies in bed, face tense, clenching his fist. A closed door appears. He's back in bed. | 91 | 8.291s | +1152ms | 1 |
+| 01:13:57.808 | 4.684s | Man in bed, shirtless, with object. | 35 | 4.091s | +343ms | 1 |
+| 01:25:17.804 | 4.375s | Dark clouds, bright light behind. | 33 | 4.011s | +114ms | 1 |
+
+The three silences the planner left out, in its own words:
+
+    gap 3   Low peak indicates minimal significant visual change
+    gap 5   Extremely low peak indicates very little visual change
+    gap 6   Very low peak suggests minimal visual interest during this silence
+
+Those are the long, visually static silences. Narrating a still frame spends a
+listener's attention on nothing, and the scene-change scores that decision was made
+from are ffmpeg `scdet` output recorded per gap in the run record.
+
+Then the part a formula would not have produced. Every line fit, nothing disagreed,
+and `adjudicate` still refused to call the pass deliverable:
+
+    disposition     escalate
+    reason          One description (gap 8) has a very tight margin of 114ms,
+                    which requires human review.
+    hand_back       [8]
+    residual_work   Review description for gap 8 to ensure it fits comfortably
+                    or can be shortened.
+
+114ms is a real number from a real WAV. Nothing in the code says a margin under some
+threshold is too tight, because nobody has measured what a mixer will tolerate.
+`dispatch` then routed on that field, `escalate` recorded the hand-back, and the CLI
+exited 3 rather than 0.
+
+### The same film at a 4s threshold, take by take
+
+Nine silences of 4s or longer, at a -26dB threshold, from the deterministic CLI:
 
 | silence | length | line | chars | rendered | margin | takes |
 |---|---|---|---|---|---|---|
@@ -185,7 +284,7 @@ export GOOGLE_CLOUD_PROJECT=your-project        # Vertex AI, via gcloud ADC
 gcloud auth application-default login
 
 python run_conform.py <film.mp4> --min-gap-s 4.0 --report out/run/report.json
-python agent/pipeline.py <film.mp4> --min-gap-s 4.0    # the full ADK graph
+python agent/pipeline.py <film.mp4> --min-gap-s 4.0    # the full agent graph
 python -m uvicorn web.server:app --port 8177           # the evidence page
 pytest tests/ -q
 ```
@@ -195,13 +294,52 @@ google-genai 2.20.0.
 
 The speaking rate lives in exactly one place, the default on
 `ad.fit.target_chars`. Nothing else declares it: `ad/conform.py` reads it off that
-signature at call time and `run_conform.py` has no default on the flag at all.
-Two tests fail if a second copy appears, because this number has already been
-wrong once and a duplicate is how the wrong one survives a fix.
+signature at call time, `agent/graph.py` resolves it through the same function, and
+neither CLI has a default on the flag. `tests/test_single_rate.py` walks the AST of
+every module under `ad/` and `agent/` and fails if the number appears as a literal
+anywhere else, because it has already been wrong once and a duplicate is how the
+wrong one survives a fix.
+
+### What a green test run means here
+
+`pytest` counts a skip as a non-failure, so a tally can read as success while the
+thing it claims to cover was never touched. Every gate lives in
+`tests/conftest.py`, each one two stage, and the run states what it exercised:
+
+```
+$ pytest tests/ -q                       # nothing configured
+exercised: ffmpeg measurement
+exercised: rendered takes on disk
+========================== integrations NOT exercised ==========================
+  gemini on vertex: none of GOOGLE_CLOUD_PROJECT, GOOGLE_API_KEY, GEMINI_API_KEY is set
+48 passed, 5 skipped in 4.40s                                          exit 0
+
+$ GOOGLE_CLOUD_PROJECT=<project> pytest tests/ -q
+exercised: ffmpeg measurement
+exercised: gemini on vertex
+exercised: rendered takes on disk
+53 passed in 154.82s                                                   exit 0
+```
+
+4.4 seconds to 154.8 seconds is the model path actually running: real descriptions
+from real clips, real TTS, and the overrun gate deciding both ways on one measured
+WAV. Naming a project and failing to reach it is a broken configuration rather than
+an absent one, so it goes red:
+
+```
+$ GOOGLE_CLOUD_PROJECT=no-such-project GOOGLE_APPLICATION_CREDENTIALS=/tmp/nope.json pytest tests/ -q
+48 passed, 5 errors in 5.70s                                           exit 1
+Failed: this run was configured to exercise gemini on vertex and could not
+```
+
+`SIGHTREAD_REQUIRE_FFMPEG=1` and `SIGHTREAD_REQUIRE_TAKES=1` do the same for the
+measurement chain and the shipped takes. The container image sets both and runs the
+suite during its build, so an image that could only serve unmeasurable pages does
+not get pushed.
 
 ### The hosted instance
 
-The hosted copy serves the completed runs and does not carry the 290MB source
+The hosted copy serves the completed runs and does not carry the 354MB source
 film, so it cannot measure anything live. It says so on the page, names the file
 and its archive.org URL, and prints the command that reproduces the runs. The
 evidence, including every rejected take as playable audio, is served either way,
@@ -215,47 +353,87 @@ containing no silence at all.
 ## What was verified, and how
 
 Every check below was broken on purpose first, to confirm it was capable of
-failing, then restored.
+failing, then restored and confirmed green.
 
-- The fit verdict. Mutating `verdict = "FIT" if margin_ms >= 0 else "OVERFLOW"` to
-  always return `"FIT"` makes the real 6.131s take against its 2.184s silence
+- **The fit verdict.** Mutating `verdict = "FIT" if margin_ms >= 0 else "OVERFLOW"`
+  to always return `"FIT"` makes the real 6.131s take against its 2.184s silence
   report `FIT` with `margin_ms` still -4197. The mutant survives, so that line is
   load-bearing.
-- The trailing-gap fix. Disabling the `window_end` branch in `ad/gaps.py` turns
-  `test_parse_trailing_silence_closes_at_window_end` red and leaves the other
-  eleven green, so that test guards exactly the bug it was written for.
-- The audio chain. `GET /audio/nighttide/gap0002.take1.wav` returns 294,330 bytes
-  and ffprobe measures the downloaded file at 6.130958s, which is the duration the
-  report claims for that rejected take. The number on the page and the file you
-  can hear are the same measurement.
-- The narrow viewport, at 375px: `scrollWidth` 375 so no horizontal overflow, the
-  tally collapses to two columns, the take rows collapse to the mobile grid, the
-  node graph wraps, and all seven rejected takes render. This was measured in a
-  real 375px frame after the screenshot tool was found to be reporting a pass at
-  375 while its own JSON said `width_applied: false`, meaning that check had never
+- **The measurement's log level.** Adding `-v error` to the silencedetect command in
+  `ad/gaps.py` turns `test_measure_gaps_finds_a_silence_that_is_there` red on a file
+  built with a 5 second digital silence in it: ffmpeg still exits zero, stderr is
+  empty, and the parser reports no silence at all. Two tests catch it, the
+  behavioural one and a source guard on the two functions that read a filter's log.
+  `probe_duration` keeps `-v error` deliberately, because ffprobe writes the
+  duration to stdout and the flag only quiets its banner.
+- **The credential gate.** Turning `require_model` into a no-op turns
+  `test_no_credentials_stops_the_workflow_from_being_built` and
+  `test_no_credentials_stops_run_pipeline` red, 2 failed and 7 passed. Restored, 9
+  passed.
+- **The overrule in `dispatch`.** Removing all three override branches turns six
+  tests red: a model verdict of `publish` on a run holding an OVERFLOW row, a
+  `publish` over a re-measurement disagreement, and four unparseable dispositions
+  that must route to a person. Restored, 17 passed. A seventh test asserts a clean
+  run still reaches `publish`, so the override cannot pass by rejecting everything.
+- **The hand-back floor in `escalate`.** Emptying the set of non-FIT rows the node
+  adds turns `test_escalate_adds_every_overflow_the_adjudicator_left_out` red. The
+  model can widen that set and never narrow it.
+- **The cue contract.** Deleting `chars_per_second` from the dict the graph writes
+  turns `test_cue_dicts_carry_every_field_conformed_cue_requires` red. That test
+  reads the required fields off the dataclass, so a field added to one and not the
+  other fails in milliseconds rather than in the last node of a paid-for run.
+- **The single-source rate.** Writing `8.6` back into `ADState` as a literal turns
+  two tests in `tests/test_single_rate.py` red, one on the AST walk and one that
+  patches the declaration and asserts every reader follows.
+- **The audio chain, against the live service.**
+  `GET /audio/nighttide/gap0002.take1.wav` returns 200 and 294,330 bytes, and
+  ffprobe measures the downloaded file at 6.130958s, which is the duration the
+  report claims for that rejected take. The number on the page and the file you can
+  hear are the same measurement.
+- **The narrow viewport, at 375px:** `scrollWidth` 375 so no horizontal overflow,
+  the tally collapses to two columns, the take rows collapse to the mobile grid, the
+  node graph wraps, and all seven rejected takes render. This was measured in a real
+  375px frame after the screenshot tool was found to be reporting a pass at 375
+  while its own JSON said `width_applied: false`, meaning that check had never
   actually run.
-- The hosted degradation, tested by moving the film aside: `/api/runs` keeps
+- **The hosted degradation,** tested by moving the film aside: `/api/runs` keeps
   serving both completed runs, the page states that it serves completed runs only
   and prints the reproduce command, and `POST /api/conform` returns 503 naming the
   source rather than starting a job it cannot finish.
 
-## Honest limits
+## What it refuses to guess
 
-- Gap detection is a fixed dBFS threshold. -26dB suits a 1961 optical soundtrack;
-  a modern mix wants a lower one. There is no adaptive threshold yet, so the
-  operator picks it and the report records what was used.
-- Descriptions are written from the video inside the silence alone. The model does
-  not see the surrounding scene, so it cannot know a character's name or carry
-  continuity between lines.
-- The coverage planner's selections are not yet evaluated against a describer's
-  choices. It is a reasonable ranking, not a validated one.
-- The accepted lines are placed in time but not mixed into the master. The output
-  is a conform report plus per-silence WAVs, which is what a mixer needs, not a
-  finished described print.
-- No Confluent. The per-silence renders are genuinely independent and would fan
-  out across a catalogue, but on one film with twelve silences a broker would be
-  decoration rather than architecture, and a decorative integration is worse than
-  an absent one.
+- **The silence threshold.** Gap detection runs at a dBFS threshold the operator
+  passes, and the report records the value that produced every figure in it. There
+  is no adaptive default, because -26dB suits a 1961 optical soundtrack and a modern
+  mix wants a lower one, and a tool that picks silently would put a number nobody
+  chose underneath every margin on the page.
+- **Anything outside the silence.** A description is written from the video inside
+  the gap and nothing else. The model is not shown the surrounding scene, so it
+  never asserts a character's name or a continuity it cannot see. `ad/describe.py`
+  instructs it to describe only what is on screen, in the present tense, and not to
+  name a character unless the name is visible.
+- **Whether a line that overran can be saved.** `shorten` cuts to a measured
+  ceiling, `retake` renders the cut line, and ffprobe decides. When the attempt cap
+  is reached with the line still long, the run does not quietly widen the gap or
+  drop the cue: `escalate` hands that gap to a human describer with the numbers
+  attached, and `dispatch` will not let a model publish past it.
+- **A verdict it did not measure.** `verify` re-reads every rendered WAV from disk
+  and recomputes the verdict with no knowledge of what was reported. A mismatch goes
+  into `verified.disagreed`, which is a defect in this tool rather than in the film,
+  and it overrides any model verdict.
+
+## Scope
+
+The output is a conform report plus per-silence WAVs at absolute timecodes, which is
+what a mixer lays in. It is not a mixed described print: the accepted lines are
+placed in time and are not summed into the master, because that is a mix decision
+about ducking and level that belongs to the person doing the mix.
+
+The coverage planner's selections are a ranking from measured gap length and
+measured scene-change activity, with its reason recorded per gap. They are not
+scored against a professional describer's choices, so the page shows the reasoning
+next to the selection rather than presenting the selection as correct.
 
 ## License
 

@@ -1,0 +1,13 @@
+# The clip files are not uploaded: they are the source video for each silence, the
+# input to a description rather than evidence of one, and the page never serves
+# them. The WAVs are uploaded, because every margin figure on the page is a claim
+# until a judge can play the take that produced it.
+.git/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.uicraft-read.json
+out/**/*.clip.mp4
+.env
+docs/img/

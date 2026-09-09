@@ -44,7 +44,7 @@ SHIPPED = [
 ]
 
 #: The source these runs were measured from. A hosted instance does not carry the
-#: 290MB film, so the live conform path is unavailable there by design. It says so
+#: 354MB film, so the live conform path is unavailable there by design. It says so
 #: with the URL and the command rather than spinning, because a control that looks
 #: alive and does nothing is worse than one that is honestly switched off.
 SOURCE = {
@@ -117,7 +117,7 @@ def runs() -> JSONResponse:
 def _live_reason(media: str | None) -> str:
     if not media:
         return (
-            "This instance serves completed runs only. It does not carry the 290MB "
+            "This instance serves completed runs only. It does not carry the 354MB "
             "source film, so there is nothing here to measure live. Every figure on "
             "this page came from the runs below, and the command opposite reproduces "
             "them from the same public file."

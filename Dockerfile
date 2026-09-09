@@ -14,9 +14,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# The source film is deliberately NOT in the image. It is a 290MB public-domain
+# The image asserts its own dependencies at build time rather than at first
+# request. ffmpeg missing from a built image is a broken image, and the gates in
+# tests/conftest.py turn that from a quiet skip into a failure when these are set,
+# so a build that would serve unmeasurable pages cannot be pushed.
+ENV SIGHTREAD_REQUIRE_FFMPEG=1 \
+    SIGHTREAD_REQUIRE_TAKES=1
+RUN python -m pytest tests/ -q \
+      --deselect tests/test_live_vertex.py \
+    && python -c "import agent.graph, web.server; print('import graph and server: ok')"
+
+# The source film is deliberately NOT in the image. It is a 371MB public-domain
 # master and the page reads entirely from out/, which holds the completed reports
-# and every accepted and rejected take. The hosted demo therefore serves a real
+# and every accepted and rejected take. The hosted copy therefore serves a real
 # finished run; the live conform path reports plainly that the media is absent
 # and gives the command to reproduce it locally.
 ENV PORT=8080 \

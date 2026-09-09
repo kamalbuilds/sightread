@@ -21,7 +21,7 @@ ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 [Parsed_silencedetect_0 @ 0xbdd061b00] silence_end: 3.482000 | silence_duration: 1.204000
 """
 
-# Real ffmpeg 9.0.1 silencedetect output -- Night Tide (1961), gap 0002 window.
+# Real ffmpeg 9.0.1 silencedetect output for Night Tide (1961), gap 0002 window.
 # File opens in silence right at the start of the analysed window: end - duration
 # is exactly 0.0, which is the correct answer.
 _STDERR_LEADING_SILENCE_AT_ZERO = """\
@@ -29,7 +29,7 @@ ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 [Parsed_silencedetect_0 @ 0xbdd061b00] silence_end: 1.212154 | silence_duration: 1.212154
 """
 
-# Real ffmpeg 9.0.1 silencedetect output -- Night Tide (1961), gap near end of
+# Real ffmpeg 9.0.1 silencedetect output for Night Tide (1961), gap near the end of
 # a short analysis window; silence starts but the window ends before the gap
 # closes, so ffmpeg never emits silence_end.
 _STDERR_TRAILING_SILENCE = """\
@@ -37,7 +37,7 @@ ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 [Parsed_silencedetect_0 @ 0xbdd061b00] silence_start: 111.462472
 """
 
-# Real ffmpeg 9.0.1 output -- three gaps from a Night Tide analysis window
+# Real ffmpeg 9.0.1 output: three gaps from a Night Tide analysis window
 # starting at 600 s (seek offset test).
 _STDERR_THREE_GAPS = """\
 ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
@@ -48,7 +48,7 @@ ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 [Parsed_silencedetect_0 @ 0xbdd061b00] silence_end: 210.500000 | silence_duration: 10.499000
 """
 
-# One short gap (below min_gap_s) and one long gap -- Night Tide, synthetic blend.
+# One short gap (below min_gap_s) and one long gap. Night Tide, synthetic blend.
 _STDERR_MIXED_LENGTHS = """\
 ffmpeg version 9.0.1 Copyright (c) 2000-2025 the FFmpeg developers
 [Parsed_silencedetect_0 @ 0xbdd061b00] silence_start: 10.000000

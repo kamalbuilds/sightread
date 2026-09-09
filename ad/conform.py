@@ -294,6 +294,7 @@ def conform_gap(
         log_entry: dict = {
             "attempt": attempt,
             "char_budget": char_budget,
+            "text": description.text,
             "chars": description.chars,
             "rendered_duration_s": fit.rendered_duration_s,
             "margin_ms": fit.margin_ms,

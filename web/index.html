@@ -185,13 +185,13 @@ h2{font:600 19px/1.2 var(--sans);margin:0 0 6px}
 .verifybar b.bad{color:var(--red)}
 .vsep{width:1px;height:15px;background:var(--line-2)}
 .runid{color:var(--fg-3);font-size:11.5px;margin-left:auto}
-.verdict{margin-top:12px;border:1px solid var(--line);border-left:2px solid var(--amber-dim);background:#0c0c10;border-radius:0 var(--r) var(--r) 0;padding:13px 15px}
-.verdict.hold{border-left-color:var(--red)}
+.adjverdict{margin-top:12px;border:1px solid var(--line);border-left:2px solid var(--amber-dim);background:#0c0c10;border-radius:0 var(--r) var(--r) 0;padding:13px 15px}
+.adjverdict.hold{border-left-color:var(--red)}
 .vlabel{font:600 9.5px/1 var(--mono);letter-spacing:0.13em;color:var(--amber)}
-.verdict.hold .vlabel{color:var(--red)}
-.verdict p{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--fg-2);max-width:88ch}
-.verdict .vover{color:var(--red)}
-.verdict .vwork{color:var(--fg-3);font-size:12.5px}
+.adjverdict.hold .vlabel{color:var(--red)}
+.adjverdict p{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--fg-2);max-width:88ch}
+.adjverdict .vover{color:var(--red)}
+.adjverdict .vwork{color:var(--fg-3);font-size:12.5px}
 .picks{margin-top:12px;display:grid;gap:5px}
 .pick{display:flex;gap:13px;align-items:baseline;font-size:12.5px;color:var(--fg-2)}
 .pick .why{color:var(--fg-3)}
@@ -395,7 +395,7 @@ document.addEventListener('click', e => {
 /** The rejected takes, up front. A line that fits proves the tool ran; a line
  *  that was thrown out on a second measurement proves the tool checked. */
 /** Say plainly whether this instance can measure a film right now. A hosted copy
- *  serves completed runs and does not carry the 290MB source, which is a fact
+ *  serves completed runs and does not carry the 354MB source, which is a fact
  *  worth stating rather than a control that spins and never resolves. */
 function renderLive(live) {
   if (!live) return;
@@ -570,7 +570,7 @@ function renderAdk(d) {
       <span class="vsep"></span>
       <span class="mono runid">run ${(d.run_id || '').slice(0, 8)} &middot; ${esc(d.model || 'gemini')}</span>
     </div>
-    <div class="verdict ${shipped ? 'ship' : 'hold'}">
+    <div class="adjverdict ${shipped ? 'ship' : 'hold'}">
       <span class="vlabel">${shipped ? 'DELIVERABLE' : 'BACK TO A DESCRIBER'}</span>
       <p>${esc(verdict.reason || 'no verdict recorded')}</p>
       ${verdict.override ? `<p class="vover">Overruled by measurement: ${esc(verdict.override)}</p>` : ''}
