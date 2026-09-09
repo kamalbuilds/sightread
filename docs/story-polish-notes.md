@@ -1,10 +1,39 @@
-# Sightread
+# Sightread story polish notes
 
-## Elevator pitch
+Scored 2026-09-10. IBM Bob evidence must be obvious. No em dashes.
 
-> Audio description must fit the silence between two lines of dialogue. Sightread measures the silence, writes a line, speaks it, then re-measures the audio: 7 of 19 takes rejected.
+## Scores (1-10)
 
-179 characters.
+| Axis | Score | Note |
+|---|---|---|
+| Uniqueness | 9 | Measure → write → speak → re-measure with rejected takes as playable audio. Empty vs description generators. |
+| Judge-clarity | 8 | Shape block: Alex the mixer, description-generator incumbents, 7/19 rejects, 15ms, no mixed print yet. |
+| Partner-load-bearing proof | 8 | Bob track evidence now above Inspiration (22,158 tokens, 7 ACP transcripts, /api/bob). Was buried under How we built it. |
+| Demo-hook | 9 | Rejected take WAV via curl+ffprobe; 114ms escalate; silence ladder. |
+
+**Composite ~8.5.**
+
+## Top 5 concrete edits (weak lines quoted)
+
+1. **BOB EVIDENCE BURIED (applied):** Was starting at "## Inspiration" with FCC/Ofcom prose. Now "## Built with IBM Bob (track evidence)" before Inspiration, with 22,158 tokens and /api/bob.
+2. **NO SHAPE BLOCK (applied):** Added Alex / description generators / 7 of 19 / honest limit.
+3. **BOB DETAIL HEADER (applied):** Was "### Built with IBM Bob". Now "(detail)" with cross-ref to the track evidence summary.
+4. **KEEP:** Mutation table and verify-disagreed overrides.
+5. **BLOCKER FOR SUBMIT:** SUBMISSIONS.md still flags Sightread blocked on captcha / repo remote / video state may be stale; story polish does not unblock Devpost captcha.
+
+## Edits applied this pass
+
+2 surgical edits in `projects/sightread/docs/STORY.md`.
+
+## Residual risks
+
+- IBM judges need to click `/api/bob`; if that endpoint 404s on the live revision, track evidence collapses.
+- No Confluent (disclosed as decoration on one film).
+
+## Devpost paste
+
+```markdown
+**Elevator pitch:** Audio description must fit the silence between two lines of dialogue. Sightread measures the silence, writes a line, speaks it, then re-measures the audio: 7 of 19 takes rejected.
 
 ## Built with IBM Bob (track evidence)
 
@@ -321,15 +350,4 @@ Placing the accepted lines into a mixed print, with ducking, so the output is a 
 ## Built with
 
 Python, Google ADK, google-genai, Gemini 2.5 Flash, Gemini 2.5 Flash TTS, Vertex AI, Google Cloud Run, FastAPI, Uvicorn, Pydantic, ffmpeg, ffprobe, IBM Bob, Agent Client Protocol, pytest
-
-## Links
-
-| | |
-|---|---|
-| Hosted | https://sightread-387894104564.us-central1.run.app |
-| Graph run record | https://sightread-387894104564.us-central1.run.app/api/adk |
-| Measured speaking rate | https://sightread-387894104564.us-central1.run.app/api/rate |
-| Bob transcripts, read off disk | https://sightread-387894104564.us-central1.run.app/api/bob |
-| A rejected take, as audio | https://sightread-387894104564.us-central1.run.app/audio/nighttide/gap0002.take1.wav |
-| Source film | https://archive.org/download/NightTide16x9CorrectedAudio/NightTide_512kb.mp4 |
-| Partner track | IBM |
+```
