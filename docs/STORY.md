@@ -70,11 +70,43 @@ residual_work   Review description for gap 8 to ensure it fits comfortably
 
 114ms is a real number from a real WAV. Nothing in the code says a margin below some threshold is too tight, because nobody has measured what a mixer will tolerate. That was a judgement made at runtime, against figures the model could not alter. The CLI exited 3 rather than 0.
 
-![The graph as it ran, each node carrying what it decided and the branch it took, with the verdict underneath](img/graph-and-verdict.png)
+### The same film where the lines do not fit
 
-The same run read back off the live service, with the three Gemini nodes marked:
+Drop the threshold to 2 seconds and the silences get short. Seventy-six of them, of which the planner took 25, and ten of those 25 first takes overran. That is the run where the shortening cycle earns its place:
 
-![GET /api/adk on the hosted service, showing every node the run executed and the adjudicator's structured verdict](img/gemini-nodes-live.png)
+```
+       measure           found 76 gaps
+       survey            surveyed 76 gaps
+GEMINI coverage_planner  selected 25 of 76 silences
+       draft             13 of 25 first takes fit, 10 to shorten       -> shorten
+GEMINI shorten           round 1: rewrote 10 lines
+       retake            round 1: rendered 9, 8 now fit, 1 still over  -> shorten
+GEMINI shorten           round 2: rewrote 1 line
+       retake            round 2: rendered 1, 1 now fit, 0 still over  -> settled
+       verify            checked 25, agreed 25, disagreed 0
+GEMINI adjudicate        escalate, 5 to hand back
+       dispatch          escalate -> escalate                          -> escalate
+       escalate          5 gaps handed back to a describer
+       report            report assembled, 22 cues deliverable
+```
+
+Two turns round the cycle, because `retake` measured a take that still overran and routed back into `shorten`. Round 1 rewrote ten lines and rendered nine of them: the tenth came back as `'Man sits.'` at 9 characters, which is a fragment rather than a description, and it was refused before the TTS call.
+
+Nine silences never reached the shortener at all. Their measured overrun left a ceiling of one or two characters, and each was handed to a describer with the arithmetic attached rather than filled with a token:
+
+```
+gap 8   the measured overrun leaves 1 characters, under the 11 a
+        description needs. This 2.581s silence cannot hold a spoken
+        line at the measured rate.
+```
+
+22 lines fit, 3 stayed OVERFLOW, and the shortest accepted line is exactly 11 characters. `verify` reproduced all 25 verdicts from disk. Run `a864218d`, the default at `/api/adk`:
+
+![GET /api/adk on the hosted service: every node the run executed, the three Gemini nodes marked, the routes taken, and the adjudicator's structured verdict](img/gemini-nodes-live.png)
+
+The same run as the page draws it, each node carrying what decided there:
+
+![The graph as it ran, with shorten and retake appearing twice because the cycle turned twice, and the verdict underneath](img/graph-and-verdict.png)
 
 ### The takes that did not survive
 
@@ -228,13 +260,15 @@ Bob also ships an `attribution_logs` table with per-file line ranges. It is empt
 
 **The graph state schema was decorative.** ADK resolves each node's parameters out of the session state and does not apply the `state_schema` defaults when filling it. A hand-written starting dict missing one key raises inside whichever node wanted it, which on this graph is after the whole silencedetect pass. That is how `survey` was found asking for `headroom_ms` from a state that did not have it. The starting state is now built by instantiating `ADState` and dumping it, so the schema's defaults are the run's defaults, and a test asserts every non-default parameter of every function node exists in it.
 
+**A timing gate that was right about the wrong thing.** At a 2 second threshold, gap 68 held "Man reads newspaper." at 20 characters, which rendered to 17.091s against a 3.367s silence, 13974ms over. The measured overrun left a ceiling of 2 characters. Asked for a rewrite that fit, the shortener returned "Mn". ffprobe measured it at 0.691s and called it FIT, which is correct, because two characters really are quick to say. A token entered a described master and every check in the project was happy with it. The gate was not wrong; two characters was never a description. `ad.conform.MIN_USEFUL_CHARS` is now 11, the shortest line in the corpus that is still a description rather than a fragment, and a ceiling below it is handed to a describer instead of to the model.
+
 **A number that had already been wrong once, written down in four places.** The README claimed the speaking rate lived in exactly one place. It lived in three more: `ADState`, `run_pipeline`, and the graph. `tests/test_single_rate.py` walks the AST of every module under `ad/` and `agent/` and fails if the value appears as a literal outside `ad/fit.py`, and a second test patches the declaration and asserts every reader follows. Writing `8.6` back into `ADState` turns both red.
 
 ## Accomplishments that we're proud of
 
 **The agent can lose an argument to a measurement, and did.** On the run above every line fit and nothing disagreed, and `adjudicate` still escalated on a 114ms margin. In the other direction, `dispatch` will not let a model publish a run holding a row `ffprobe` called OVERFLOW, and `escalate` adds every non-FIT gap the adjudicator left out. Both directions have a test, and both go red when the guard is removed.
 
-**Every check was broken on purpose before it was believed.** Six mutations, each confirmed red and then restored to green:
+**Every check was broken on purpose before it was believed.** Seven mutations, each confirmed red and then restored to green:
 
 | mutation | red |
 |---|---|
@@ -244,6 +278,7 @@ Bob also ships an `attribution_logs` table with per-file line ranges. It is empt
 | the non-FIT rows `escalate` adds emptied | 1 failed, 16 passed |
 | `chars_per_second` deleted from the cue dict | 1 failed, 16 passed |
 | the measured rate written back into `ADState` | 2 failed, 1 passed |
+| the minimum description length set to 0 | 2 failed, 18 passed |
 
 **The rejected takes ship as playable audio.** A margin figure is a claim until you can hear the line that produced it. Seven rejected takes are served from the hosted page, and the one that overran by 15ms is the interesting one.
 
