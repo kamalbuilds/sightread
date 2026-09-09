@@ -5,11 +5,13 @@ ADK's InMemoryRunner and returns the final state plus the framework's own event
 trace, so what the UI shows a reviewer is ADK's record of what ran rather than a
 list assembled by hand alongside the code.
 
-Gemini is required. There is no deterministic fallback for the coverage planner,
-because a fallback that produced the same shape of plan would make the model
-decorative: you could delete it and the product would behave identically. Which
-silences are worth spending a listener's attention on is a judgement call, so it
-is the model's. Every number stays with ffmpeg.
+Gemini is required, and the check is in `agent/credentials.py` rather than here so
+that both this entry point and `build_workflow` go through the same one. There is
+no deterministic fallback for any of the three model nodes: a fallback that
+produced the same shape of output would make the model decorative, because you
+could delete it and the product would behave identically. Which silences are
+worth a listener's attention, what to cut from a line that overran, and whether
+the pass is deliverable are all judgement calls. Every number stays with ffmpeg.
 """
 
 from __future__ import annotations
@@ -24,56 +26,45 @@ from typing import Callable
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from agent.credentials import (  # noqa: E402
+    GeminiRequired,
+    model_available,
+    require_model,
+    resolve_model,
+    use_vertex,
+)
+
 APP_NAME = "sightread"
 USER_ID = "describer"
 
-
-class GeminiRequired(RuntimeError):
-    """Raised when no Gemini configuration is present in this process."""
-
-
-def model_available() -> bool:
-    """True when Vertex AI or the Gemini API is configured in this process."""
-    if os.getenv("GOOGLE_CLOUD_PROJECT"):
-        return True
-    return bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-
-
-def use_vertex() -> None:
-    """Point ADK's model client at Vertex AI when a project is configured.
-
-    `ad/describe.py` and `ad/render.py` construct their own client and pass
-    `vertexai=True` explicitly, but ADK builds the LlmAgent's client from the
-    environment. Without this the graph fails inside the coverage planner with
-    "No API key was provided", which reads as a missing credential rather than as
-    the wrong backend being selected, and only after several minutes of ffmpeg has
-    already been spent upstream.
-    """
-    if os.getenv("GOOGLE_CLOUD_PROJECT") and not os.getenv("GOOGLE_API_KEY"):
-        os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
-        os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "us-central1")
-
-
-def require_model() -> None:
-    if not model_available():
-        raise GeminiRequired(
-            "Set GOOGLE_CLOUD_PROJECT for Vertex AI, or GOOGLE_API_KEY for the "
-            "Gemini API. Sightread does not run without a model: the coverage "
-            "planner is the only step that decides which silences are worth "
-            "describing, and there is no deterministic stand-in for it."
-        )
+__all__ = [
+    "APP_NAME",
+    "USER_ID",
+    "DescribeRun",
+    "GeminiRequired",
+    "model_available",
+    "require_model",
+    "resolve_model",
+    "run_pipeline",
+    "use_vertex",
+]
 
 
 @dataclass
 class DescribeRun:
     run_id: str
     media_path: str
+    model: str = ""
     gaps: list[dict] = field(default_factory=list)
     survey: list[dict] = field(default_factory=list)
     plan: dict = field(default_factory=dict)
     cues: list[dict] = field(default_factory=list)
     skipped: list[dict] = field(default_factory=list)
+    shorten: dict = field(default_factory=dict)
+    rounds: int = 0
     verified: dict = field(default_factory=dict)
+    verdict: dict = field(default_factory=dict)
+    escalation: dict = field(default_factory=dict)
     report: dict = field(default_factory=dict)
     steps: list[dict] = field(default_factory=list)
     trace: list[dict] = field(default_factory=list)
@@ -133,9 +124,10 @@ def run_pipeline(
     location: str | None = None,
     on_step: Callable[[list[dict]], None] | None = None,
 ) -> DescribeRun:
-    """Measure, plan coverage, conform, re-verify and report over one film."""
+    """Measure, plan coverage, draft, shorten, re-measure, adjudicate and report."""
     require_model()
     use_vertex()
+    model = resolve_model()
     run_id = str(uuid.uuid4())
     state = {
         "media_path": media_path,
@@ -153,12 +145,17 @@ def run_pipeline(
     return DescribeRun(
         run_id=run_id,
         media_path=media_path,
+        model=model,
         gaps=final.get("gaps") or [],
         survey=final.get("survey") or [],
         plan=final.get("plan") or {},
         cues=final.get("cues") or [],
         skipped=final.get("skipped") or [],
+        shorten=final.get("shorten") or {},
+        rounds=int(final.get("rounds") or 0),
         verified=final.get("verified") or {},
+        verdict=final.get("verdict") or {},
+        escalation=final.get("escalation") or {},
         report=final.get("report") or {},
         steps=final.get("steps") or [],
         trace=trace,
@@ -185,14 +182,14 @@ def main() -> int:
         min_gap_s=args.min_gap_s,
         max_attempts=args.max_attempts,
         on_step=lambda steps: print(
-            f"[{steps[-1]['step']}] {'ok' if steps[-1]['ok'] else 'FAILED'}: "
+            f"[{steps[-1]['node']}] {'ok' if steps[-1]['ok'] else 'FAILED'}: "
             f"{steps[-1]['summary']}",
             flush=True,
         ),
     )
 
     print("")
-    print(f"run {run.run_id}")
+    print(f"run {run.run_id} on {run.model}")
     print(f"planner selected {run.plan.get('selected')}")
     for gap_index, reason in (run.plan.get("reasons") or {}).items():
         print(f"  gap {gap_index}: {reason}")
@@ -205,8 +202,16 @@ def main() -> int:
             f"{cue['attempts']} attempts"
         )
         print(f"        {cue['text']}")
+        for entry in cue["attempt_log"]:
+            if entry.get("dropped"):
+                print(f"        take {entry['attempt']} dropped: {entry['dropped']}")
     print("")
-    print("verified:", json.dumps(run.verified))
+    print(f"shortening rounds: {run.rounds}")
+    print("verified:", json.dumps({k: v for k, v in run.verified.items() if k != "table"}))
+    print("verdict:", json.dumps(run.verdict))
+    if run.escalation:
+        print("escalation:", json.dumps(run.escalation.get("hand_back")))
+        print("residual work:", run.escalation.get("residual_work"))
     print("totals:", json.dumps((run.report.get("totals") or {})))
 
     if args.report:
@@ -216,8 +221,12 @@ def main() -> int:
             json.dumps(
                 {
                     "run_id": run.run_id,
+                    "model": run.model,
                     "steps": run.steps,
                     "plan": run.plan,
+                    "rounds": run.rounds,
+                    "verdict": run.verdict,
+                    "escalation": run.escalation,
                     "trace": run.trace,
                     "report": run.report,
                 },
@@ -226,7 +235,7 @@ def main() -> int:
         )
         print(f"report written to {out}")
 
-    return 0
+    return 0 if run.verdict.get("disposition") == "publish" else 3
 
 
 if __name__ == "__main__":

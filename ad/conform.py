@@ -42,9 +42,166 @@ class ConformedCue:
     attempt_log: tuple[dict, ...]
 
 
+@dataclass(frozen=True)
+class Take:
+    """One rendered attempt at one gap, with its measurement already attached.
+
+    A Take is never produced without an ffprobe reading of the WAV that was just
+    written, so there is no state in which a take exists and its duration is a
+    guess.
+    """
+
+    gap_index: int
+    attempt: int
+    char_budget: int
+    text: str
+    chars: int
+    audio_path: str
+    clip_path: str
+    rendered_duration_s: float
+    margin_ms: int
+    verdict: str
+
+
 def _default_chars_per_second() -> float:
     sig = inspect.signature(_fit_mod.target_chars)
     return sig.parameters["chars_per_second"].default
+
+
+def shrink_budget(
+    chars: int,
+    rendered_duration_s: float,
+    margin_ms: int,
+    ceiling: int,
+) -> int:
+    """The character budget a take that overran by *margin_ms* must come down to.
+
+    Sized from the overrun that was measured, not from a fixed step. The line ran
+    long by some number of milliseconds at an observed rate of
+    `chars / rendered_duration_s`, so it must lose at least that many characters,
+    plus five percent. Clamped to *ceiling* so the budget never rises between
+    attempts, and to 1 so it never becomes zero or negative.
+
+    Raises ValueError when *margin_ms* is not negative: a take that fit has no
+    overrun to size a cut from, and computing one anyway would silently widen the
+    budget.
+    """
+    if margin_ms >= 0:
+        raise ValueError(
+            f"shrink_budget needs a measured overrun, got margin_ms={margin_ms}"
+        )
+    if rendered_duration_s <= 0:
+        raise ValueError(
+            f"rendered_duration_s must be positive, got {rendered_duration_s}"
+        )
+    observed_cps = chars / rendered_duration_s
+    overrun_chars = math.ceil(-margin_ms / 1000 * observed_cps)
+    safety_cut = math.ceil(chars * 0.05)
+    return max(1, min(chars - overrun_chars - safety_cut, ceiling))
+
+
+def speak_take(
+    gap: Gap,
+    text: str,
+    out_dir: str,
+    attempt: int,
+    *,
+    char_budget: int,
+    clip_path: str,
+    project: str,
+    location: str = "us-central1",
+    headroom_ms: int = 250,
+    tts_model: str = "gemini-2.5-flash-tts",
+    voice: str = "Kore",
+) -> Take:
+    """Render one line to a WAV, measure that WAV, and return the verdict.
+
+    This is the deterministic gate. It takes a line from wherever it came from,
+    renders it, and reads the duration back off the file with ffprobe. Nothing
+    about the line's author changes what this function decides.
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    audio_path = os.path.join(out_dir, f"gap{gap.index:04d}.take{attempt}.wav")
+    render_line(
+        text,
+        audio_path,
+        project=project,
+        location=location,
+        model=tts_model,
+        voice=voice,
+    )
+    fit = check_fit(gap.index, gap.duration_s, audio_path, headroom_ms=headroom_ms)
+    return Take(
+        gap_index=gap.index,
+        attempt=attempt,
+        char_budget=char_budget,
+        text=text,
+        chars=len(text),
+        audio_path=audio_path,
+        clip_path=clip_path,
+        rendered_duration_s=fit.rendered_duration_s,
+        margin_ms=fit.margin_ms,
+        verdict=fit.verdict,
+    )
+
+
+def draft_take(
+    media_path: str,
+    gap: Gap,
+    out_dir: str,
+    *,
+    project: str,
+    location: str = "us-central1",
+    headroom_ms: int = 250,
+    chars_per_second: float | None = None,
+    describe_model: str = "gemini-2.5-flash",
+    tts_model: str = "gemini-2.5-flash-tts",
+    voice: str = "Kore",
+) -> Take:
+    """Write the first line for one gap from its video, speak it, and measure it.
+
+    The first take is the only one that sees the picture. Every later take is a
+    rewrite of a line whose real spoken length is already known, which is a
+    different job and belongs to a different agent.
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    budget = target_chars(
+        gap.duration_s,
+        headroom_ms=headroom_ms,
+        **({} if chars_per_second is None else {"chars_per_second": chars_per_second}),
+    )
+    if budget == 0:
+        raise ConformError(
+            f"Gap {gap.index} is {gap.duration_s:.3f}s, which is shorter than the "
+            f"{headroom_ms}ms headroom; no description can fit."
+        )
+
+    clip_path = os.path.join(out_dir, f"gap{gap.index:04d}.clip.mp4")
+    description = describe_gap(
+        media_path,
+        gap.index,
+        gap.start_s,
+        gap.duration_s,
+        budget,
+        clip_path,
+        project=project,
+        location=location,
+        model=describe_model,
+        attempt=1,
+    )
+    return speak_take(
+        gap,
+        description.text,
+        out_dir,
+        1,
+        char_budget=budget,
+        clip_path=clip_path,
+        project=project,
+        location=location,
+        headroom_ms=headroom_ms,
+        tts_model=tts_model,
+        voice=voice,
+    )
 
 
 def conform_gap(
@@ -158,12 +315,12 @@ def conform_gap(
             )
 
         if attempt < max_attempts:
-            observed_cps = description.chars / fit.rendered_duration_s
-            overrun_chars = math.ceil(-fit.margin_ms / 1000 * observed_cps)
-            next_budget_raw = description.chars - overrun_chars
-            safety_cut = math.ceil(description.chars * 0.05)
-            next_budget = max(1, next_budget_raw - safety_cut)
-            next_budget = min(next_budget, char_budget)
+            next_budget = shrink_budget(
+                description.chars,
+                fit.rendered_duration_s,
+                fit.margin_ms,
+                char_budget,
+            )
 
             usable_s = gap.duration_s - headroom_ms / 1000
             shrink_note = (
